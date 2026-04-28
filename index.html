@@ -92,7 +92,7 @@ function doLogin(){
     if(email===ADMIN_EMAIL&&pass===ADMIN_PASS){
       sessionStorage.setItem('ag_role','admin');
       sessionStorage.setItem('ag_user','AG Consultoria');
-      window.location.href='app.html';
+      window.location.href='/app';
     } else showErr('Credenciais inválidas.');
   } else {
     const clients=getStoredClients();
@@ -101,7 +101,7 @@ function doLogin(){
       sessionStorage.setItem('ag_role','client');
       sessionStorage.setItem('ag_client_id',c.id);
       sessionStorage.setItem('ag_user',c.name);
-      window.location.href='app.html';
+      window.location.href='/app';
     } else showErr('Credenciais inválidas.');
   }
 }
