@@ -1186,7 +1186,7 @@ function renderSurveys(cid){
   const cards=surveys.map(s=>{
     const client=getClientById(s.client_id);
     const statusBadge={ativa:'badge-green',concluida:'badge-blue',pausada:'badge-orange'}[s.status]||'badge-gray';
-    const link=`responder.html?token=${s.public_token}`;
+    const link=`${window.location.origin}/responder?token=${s.public_token}`;
     return `<div class="s-card">
       <div class="s-card-type">${SURVEY_TYPE_LABELS[s.type]||s.type}</div>
       <h3>${s.title}</h3>
@@ -1973,7 +1973,7 @@ function copyLink(clientId){
   const surveys=getSurveys(clientId);
   if(!surveys.length){notify('Nenhuma pesquisa ativa para este cliente.','error');return}
   const active=surveys.find(s=>s.status==='ativa')||surveys[0];
-  const link=`${window.location.origin}/ag_rh_v2/responder.html?token=${active.public_token}`;
+  const link=`${window.location.origin}/responder?token=${active.public_token}`;
   navigator.clipboard.writeText(link).then(()=>notify('Link copiado!','success'));
 }
 
