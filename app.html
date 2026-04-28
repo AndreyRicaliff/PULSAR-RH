@@ -1,0 +1,2309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AG People Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#3662FF;--secondary:#A55EFF;--accent:#08C16A;
+  --bg:#0E121A;--surface:#1B1F27;--surface2:#252B38;--surface3:#2E3444;
+  --border:#2E3444;--text:#F0F2FF;--muted:#8B9CC0;--orange:#FFBC7D;
+  --danger:#FF5C5C;--warn:#FFBC7D;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:240px;min-width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0}
+.sidebar-logo{padding:20px 20px 12px;border-bottom:1px solid var(--border)}
+.sidebar-logo span{font-size:17px;font-weight:700;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sidebar-logo small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.nav{flex:1;padding:12px 0;overflow-y:auto}
+.nav-section{padding:6px 14px 4px;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;border-radius:0;color:var(--muted);font-size:13px;font-weight:500;transition:.15s;border-left:3px solid transparent;margin:1px 0}
+.nav-item:hover{color:var(--text);background:var(--surface2)}
+.nav-item.active{color:var(--primary);background:rgba(54,98,255,.1);border-left-color:var(--primary)}
+.nav-item .icon{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{padding:14px 16px;border-top:1px solid var(--border)}
+.user-pill{display:flex;align-items:center;gap:8px;font-size:12px}
+.avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;color:#fff}
+.user-pill .meta{flex:1;overflow:hidden}
+.user-pill .meta strong{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-pill .meta span{color:var(--muted);font-size:11px}
+.logout-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px}
+.logout-btn:hover{color:var(--danger)}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;height:100vh}
+.topbar{padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.topbar-title{font-size:17px;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.company-select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none;cursor:pointer;min-width:200px}
+.company-select:focus{border-color:var(--primary)}
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;transition:.2s}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{opacity:.9}
+.btn-secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.btn-secondary:hover{border-color:var(--primary);color:var(--primary)}
+.btn-accent{background:var(--accent);color:#0E121A}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+.content{flex:1;overflow-y:auto;padding:24px}
+
+/* ── CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}
+.kpi-card.blue::before{background:var(--primary)}
+.kpi-card.purple::before{background:var(--secondary)}
+.kpi-card.orange::before{background:var(--orange)}
+.kpi-card.red::before{background:var(--danger)}
+.kpi-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.kpi-value{font-size:28px;font-weight:700;line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.kpi-icon{position:absolute;top:14px;right:14px;font-size:22px;opacity:.2}
+
+.charts-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px}
+.charts-grid.two{grid-template-columns:2fr 1fr}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.chart-card.span2{grid-column:span 2}
+.chart-title{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:16px;text-transform:uppercase;letter-spacing:.4px}
+.chart-wrap{position:relative;height:220px}
+
+/* ── TABLES ── */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-header h2{font-size:16px;font-weight:600}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface2)}
+th{padding:11px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+td{padding:12px 16px;font-size:13px;border-top:1px solid var(--border)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-green{background:rgba(8,193,106,.15);color:var(--accent)}
+.badge-blue{background:rgba(54,98,255,.15);color:var(--primary)}
+.badge-purple{background:rgba(165,94,255,.15);color:var(--secondary)}
+.badge-orange{background:rgba(255,188,125,.15);color:var(--orange)}
+.badge-red{background:rgba(255,92,92,.15);color:var(--danger)}
+.badge-gray{background:var(--surface2);color:var(--muted)}
+
+/* ── MODALS ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
+.modal-lg{max-width:800px}
+.modal h2{font-size:17px;font-weight:600;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none;transition:.2s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--primary)}
+.form-group textarea{resize:vertical;min-height:80px}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+
+/* ── QUESTION BUILDER ── */
+.qbuilder{margin-top:16px}
+.qbuilder-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.qbuilder-header h3{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.q-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;position:relative}
+.q-item-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.q-num{background:var(--primary);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.q-item-head input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none}
+.q-item-head input:focus{border-color:var(--primary)}
+.q-row{display:grid;grid-template-columns:1fr 1fr 80px;gap:8px}
+.q-row select{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none}
+.q-del{background:rgba(255,92,92,.15);border:1px solid rgba(255,92,92,.2);border-radius:6px;color:var(--danger);cursor:pointer;font-size:14px;padding:6px 10px}
+.q-del:hover{background:rgba(255,92,92,.3)}
+.add-q-btn{width:100%;padding:10px;background:rgba(54,98,255,.1);border:1px dashed var(--primary);border-radius:8px;color:var(--primary);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:.2s}
+.add-q-btn:hover{background:rgba(54,98,255,.2)}
+.std-qs-toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);cursor:pointer;margin-bottom:10px;user-select:none}
+.toggle-switch{width:32px;height:18px;background:var(--surface3);border-radius:9px;position:relative;transition:.2s;flex-shrink:0}
+.toggle-switch.on{background:var(--primary)}
+.toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:.2s}
+.toggle-switch.on::after{left:16px}
+
+/* ── INSIGHTS ── */
+.insights-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.insight-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.insight-type{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.insight-card.positive .insight-type{color:var(--accent)}
+.insight-card.negative .insight-type{color:var(--danger)}
+.insight-card.neutral .insight-type{color:var(--primary)}
+.insight-card h3{font-size:14px;font-weight:600;margin-bottom:6px}
+.insight-card p{font-size:13px;color:var(--muted);line-height:1.5}
+
+/* ── PEOPLE ANALYTICS ── */
+.pa-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:24px}
+.pa-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.pa-card-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.gauge{text-align:center;padding:10px 0}
+.gauge-val{font-size:36px;font-weight:800;line-height:1}
+.gauge-label{font-size:12px;color:var(--muted);margin-top:4px}
+.progress-bar{background:var(--surface2);border-radius:4px;height:6px;margin-top:10px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .5s}
+.progress-fill.bad{background:var(--danger)}
+.progress-fill.warn{background:var(--orange)}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty h3{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
+.empty p{font-size:13px;line-height:1.5}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+
+/* ── MATRIX HEATMAP ── */
+.matrix-container{overflow-x:auto;padding-bottom:8px}
+.matrix-table{display:grid;gap:3px;width:fit-content;margin:0 auto}
+.matrix-cell{width:86px;height:68px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;text-align:center;padding:4px;transition:.2s;position:relative}
+.matrix-cell:hover{filter:brightness(1.15);transform:scale(1.04)}
+.risk-low{background:rgba(8,193,106,.22);border:1px solid rgba(8,193,106,.4);color:#08C16A}
+.risk-medium{background:rgba(255,188,125,.22);border:1px solid rgba(255,188,125,.4);color:#FFBC7D}
+.risk-high{background:rgba(255,92,92,.22);border:1px solid rgba(255,92,92,.4);color:#FF5C5C}
+.risk-critical{background:rgba(180,0,0,.28);border:1px solid rgba(220,0,0,.5);color:#ff4444}
+.matrix-label-cell{display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);font-weight:600;padding:4px}
+.risk-chip{display:inline-block;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:1px 5px;font-size:8px;font-weight:700;margin:1px;white-space:nowrap;max-width:78px;overflow:hidden;text-overflow:ellipsis;cursor:default}
+.matrix-axis-y{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;color:var(--muted);font-weight:600;text-align:center;padding:8px 4px}
+.matrix-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;justify-content:center}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.legend-dot{width:12px;height:12px;border-radius:4px}
+
+/* ── CHAT ── */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 130px)}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px 12px 0 0;min-height:0}
+.chat-bubble{max-width:82%;padding:12px 16px;border-radius:12px;font-size:13.5px;line-height:1.6}
+.chat-bubble.user{background:var(--primary);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-bubble.agent{background:var(--surface2);border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:4px}
+.bubble-role{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin-bottom:6px}
+.chat-input-row{display:flex;gap:8px;padding:12px;background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;align-items:flex-end}
+.chat-textarea{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px;outline:none;resize:none;height:44px;max-height:120px;overflow-y:auto;line-height:1.5}
+.chat-textarea:focus{border-color:var(--primary)}
+.typing-dots{display:inline-flex;gap:4px;align-items:center;padding:8px 12px}
+.typing-dots span{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:dotpulse 1.2s infinite}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dotpulse{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.chat-ctx-bar{background:rgba(54,98,255,.08);border:1px solid rgba(54,98,255,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+
+/* ── INDICATORS ── */
+.ind-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.ind-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center}
+.ind-val{font-size:44px;font-weight:900;line-height:1;margin:8px 0}
+.ind-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.ind-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.trend-tag{display:inline-flex;align-items:center;gap:3px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-top:6px}
+.trend-good{background:rgba(8,193,106,.15);color:var(--accent)}
+.trend-bad{background:rgba(255,92,92,.15);color:var(--danger)}
+.trend-flat{background:rgba(54,98,255,.15);color:var(--primary)}
+.benchmark-bar{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;color:var(--muted)}
+.bbar{flex:1;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.bfill{height:100%;border-radius:3px;transition:width .5s}
+
+/* ── SPECIALIST NOTES & AI ── */
+.specialist-box{background:rgba(54,98,255,.06);border:1px solid rgba(54,98,255,.25);border-radius:12px;padding:20px;margin-bottom:20px}
+.specialist-box h3{font-size:13px;font-weight:600;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.specialist-box textarea,.specialist-box select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none;resize:vertical;min-height:90px;line-height:1.6;margin-bottom:10px}
+.specialist-box select{min-height:unset;resize:none}
+.specialist-box textarea:focus,.specialist-box select:focus{border-color:var(--primary)}
+.ai-insight-card{background:linear-gradient(135deg,rgba(165,94,255,.09),rgba(54,98,255,.07));border:1px solid rgba(165,94,255,.3);border-radius:12px;padding:20px;margin-bottom:14px}
+.ai-insight-card .ai-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--secondary);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.ai-insight-card h4{font-size:14px;font-weight:700;margin-bottom:6px}
+.ai-insight-card p{font-size:13px;color:var(--muted);line-height:1.65;white-space:pre-wrap}
+.api-warning{background:rgba(255,188,125,.08);border:1px solid rgba(255,188,125,.3);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--orange);margin-bottom:16px;line-height:1.5}
+.config-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.config-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:monospace;font-size:12px;outline:none}
+.config-row input:focus{border-color:var(--primary)}
+
+/* ── TABS (content) ── */
+.ctabs{display:flex;gap:2px;background:var(--surface2);border-radius:10px;padding:3px;margin-bottom:20px;width:fit-content}
+.ctab{padding:7px 16px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:.15s}
+.ctab.active{background:var(--surface);color:var(--text)}
+
+/* ── SURVEY CARD ── */
+.survey-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.s-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;cursor:pointer;transition:.2s}
+.s-card:hover{border-color:var(--primary);transform:translateY(-2px)}
+.s-card-type{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--primary);margin-bottom:6px}
+.s-card h3{font-size:15px;font-weight:600;margin-bottom:6px}
+.s-card p{font-size:12px;color:var(--muted);margin-bottom:12px}
+.s-card-footer{display:flex;align-items:center;justify-content:space-between}
+.s-card-stat{font-size:12px;color:var(--muted)}
+.s-card-stat strong{color:var(--text)}
+.s-card-actions{display:flex;gap:6px}
+
+/* ── NOTIFICATION ── */
+.notif{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;font-weight:500;z-index:9999;transform:translateX(120%);transition:.3s;max-width:320px}
+.notif.show{transform:translateX(0)}
+.notif.success{border-left:3px solid var(--accent);color:var(--accent)}
+.notif.error{border-left:3px solid var(--danger);color:var(--danger)}
+.notif.info{border-left:3px solid var(--primary);color:var(--primary)}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span>AG People Analytics</span>
+    <small>Muito além da contabilidade</small>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Visão Geral</div>
+    <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="showPage('people')"><span class="icon">📈</span> People Analytics</div>
+    <div class="nav-item" onclick="showPage('indicadores')"><span class="icon">🎰</span> Indicadores</div>
+
+    <div class="nav-section">Pesquisas</div>
+    <div class="nav-item" onclick="showPage('surveys')"><span class="icon">📋</span> Pesquisas</div>
+    <div class="nav-item" onclick="showPage('results')"><span class="icon">🎯</span> Resultados</div>
+    <div class="nav-item" onclick="showPage('questions')"><span class="icon">🔧</span> Banco de Perguntas</div>
+
+    <div class="nav-section">RH</div>
+    <div class="nav-item" onclick="showPage('collaborators')"><span class="icon">👥</span> Colaboradores</div>
+    <div class="nav-item" onclick="showPage('actions')"><span class="icon">✅</span> Planos de Ação</div>
+    <div class="nav-item" onclick="showPage('matrizes')"><span class="icon">🗂️</span> Matrizes de Risco</div>
+
+    <div class="nav-section">Inteligência</div>
+    <div class="nav-item" onclick="showPage('insights')"><span class="icon">🧠</span> Insights IA</div>
+    <div class="nav-item" onclick="showPage('agente')"><span class="icon">🤖</span> Agente IA</div>
+
+    <div id="admin-only" style="display:none">
+      <div class="nav-section">Administração</div>
+      <div class="nav-item" onclick="showPage('clients')"><span class="icon">🏢</span> Clientes</div>
+      <div class="nav-item" onclick="showPage('reports')"><span class="icon">📄</span> Relatórios</div>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-pill">
+      <div class="avatar" id="av">A</div>
+      <div class="meta">
+        <strong id="user-name">Carregando...</strong>
+        <span id="user-role">-</span>
+      </div>
+      <button class="logout-btn" onclick="doLogout()" title="Sair">⏻</button>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <header class="topbar">
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="topbar-right">
+      <select class="company-select" id="company-select" onchange="onCompanyChange()">
+        <option value="all">Todas as empresas</option>
+      </select>
+      <button class="btn btn-primary" id="topbar-action" onclick="openNewSurveyModal()">+ Nova Pesquisa</button>
+    </div>
+  </header>
+
+  <div class="content" id="content">
+    <!-- Pages rendered here -->
+  </div>
+</main>
+
+<!-- ═══════════════════════ MODALS ═══════════════════════ -->
+
+<!-- New Survey Modal -->
+<div class="modal-backdrop" id="modal-survey">
+  <div class="modal modal-lg">
+    <h2>🗒️ Nova Pesquisa</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Título</label>
+        <input id="s-title" placeholder="Ex: Clima Organizacional Q2 2025"/>
+      </div>
+      <div class="form-group">
+        <label>Empresa</label>
+        <select id="s-client"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tipo de Pesquisa</label>
+        <select id="s-type" onchange="onSurveyTypeChange()">
+          <option value="clima">Clima Organizacional</option>
+          <option value="engajamento">Engajamento / eNPS</option>
+          <option value="360">Avaliação 360°</option>
+          <option value="180">Avaliação 180°</option>
+          <option value="lideranca">Liderança</option>
+          <option value="felicidade">Felicidade no Trabalho</option>
+          <option value="nr1">NR-1 / Saúde Mental</option>
+          <option value="onboarding">Onboarding</option>
+          <option value="desligamento">Desligamento</option>
+          <option value="saude">Saúde Geral</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Periodicidade</label>
+        <select id="s-period">
+          <option value="pontual">Pontual</option>
+          <option value="mensal">Mensal</option>
+          <option value="trimestral">Trimestral</option>
+          <option value="semestral">Semestral</option>
+          <option value="anual">Anual</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Prazo</label>
+        <input id="s-deadline" type="date"/>
+      </div>
+      <div class="form-group">
+        <label>Descrição</label>
+        <input id="s-desc" placeholder="Contexto da pesquisa"/>
+      </div>
+    </div>
+
+    <!-- Question Builder -->
+    <div class="qbuilder">
+      <div class="qbuilder-header">
+        <h3>Perguntas da Pesquisa</h3>
+        <span id="q-count-badge" style="font-size:12px;color:var(--muted)">0 perguntas</span>
+      </div>
+      <label class="std-qs-toggle" onclick="toggleStdQs()">
+        <div class="toggle-switch on" id="std-toggle"></div>
+        Incluir perguntas padrão do modelo
+      </label>
+      <div id="custom-questions-list"></div>
+      <button class="add-q-btn" onclick="addCustomQuestion()">+ Adicionar Pergunta Customizada</button>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-survey')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveSurvey()">Criar Pesquisa</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Collaborator Modal -->
+<div class="modal-backdrop" id="modal-collab">
+  <div class="modal">
+    <h2>👤 Novo Colaborador</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Nome</label><input id="c-name" placeholder="Nome completo"/></div>
+      <div class="form-group"><label>E-mail</label><input id="c-email" type="email" placeholder="email@empresa.com"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Cargo</label><input id="c-role" placeholder="Analista, Gerente..."/></div>
+      <div class="form-group"><label>Departamento</label><input id="c-dept" placeholder="RH, TI, Vendas..."/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Empresa</label><select id="c-client"></select></div>
+      <div class="form-group">
+        <label>Regime</label>
+        <select id="c-regime">
+          <option value="CLT">CLT</option><option value="PJ">PJ</option>
+          <option value="Estagio">Estágio</option><option value="Temporario">Temporário</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Data Admissão</label><input id="c-admission" type="date"/></div>
+      <div class="form-group"><label>Salário</label><input id="c-salary" type="number" placeholder="0.00"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-collab')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCollab()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Action Plan Modal -->
+<div class="modal-backdrop" id="modal-action">
+  <div class="modal">
+    <h2>✅ Novo Plano de Ação</h2>
+    <div class="form-group"><label>Título</label><input id="a-title" placeholder="Ex: Melhorar comunicação interna"/></div>
+    <div class="form-row">
+      <div class="form-group"><label>Empresa</label><select id="a-client"></select></div>
+      <div class="form-group"><label>Área</label><input id="a-area" placeholder="RH, Operações..."/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Prioridade</label>
+        <select id="a-priority">
+          <option value="alta">Alta</option><option value="media" selected>Média</option><option value="baixa">Baixa</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Responsável</label><input id="a-resp" placeholder="Nome do responsável"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Prazo</label><input id="a-deadline" type="date"/></div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="a-status">
+          <option value="pendente">Pendente</option><option value="em_andamento">Em andamento</option><option value="concluido">Concluído</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Descrição</label><textarea id="a-desc" placeholder="Detalhe as ações..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-action')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAction()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Client Modal -->
+<div class="modal-backdrop" id="modal-client">
+  <div class="modal">
+    <h2>🏢 Novo Cliente</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Empresa</label><input id="cl-name" placeholder="Razão social"/></div>
+      <div class="form-group"><label>CNPJ</label><input id="cl-cnpj" placeholder="00.000.000/0001-00"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Segmento</label><input id="cl-segment" placeholder="Tecnologia, Varejo..."/></div>
+      <div class="form-group"><label>Headcount</label><input id="cl-hc" type="number" placeholder="0"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>E-mail de Acesso</label><input id="cl-email" type="email" placeholder="rh@empresa.com"/></div>
+      <div class="form-group"><label>Senha</label><input id="cl-pass" type="password" placeholder="senha123"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Contato RH</label><input id="cl-contact" placeholder="Nome do responsável"/></div>
+      <div class="form-group">
+        <label>Plano</label>
+        <select id="cl-plan">
+          <option value="basico">Básico</option><option value="intermediario">Intermediário</option><option value="completo" selected>Completo</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-client')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveClient()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Survey Results Modal -->
+<div class="modal-backdrop" id="modal-results">
+  <div class="modal modal-lg" id="results-content">
+  </div>
+</div>
+
+<!-- Indicator Modal -->
+<div class="modal-backdrop" id="modal-indicator">
+  <div class="modal">
+    <h2>📅 Lançar Indicadores Mensais</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Empresa</label><select id="ind-client"></select></div>
+      <div class="form-group"><label>Mês de Referência</label><input id="ind-month" type="month"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Headcount no Período</label><input id="ind-hc" type="number" placeholder="Ex: 85"/></div>
+      <div class="form-group"><label>Dias Úteis do Mês</label><input id="ind-days" type="number" placeholder="Ex: 22"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Total de Dias de Falta</label><input id="ind-abs" type="number" placeholder="Ex: 42"/></div>
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:12px;color:var(--muted)">
+      <strong style="color:var(--text)">Absenteísmo</strong> = (Dias de falta ÷ (HC × Dias úteis)) × 100
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Desligamentos no Mês</label><input id="ind-exits" type="number" placeholder="Ex: 3"/></div>
+      <div class="form-group"><label>Admissões no Mês</label><input id="ind-admits" type="number" placeholder="Ex: 1"/></div>
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:4px;font-size:12px;color:var(--muted)">
+      <strong style="color:var(--text)">Turnover</strong> = ((Saídas + Entradas) ÷ 2 ÷ HC) × 100 &nbsp;·&nbsp; <strong style="color:var(--text)">Retenção</strong> = 100 − Turnover
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-indicator')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveIndicator()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- NR-1 Risk Modal -->
+<div class="modal-backdrop" id="modal-nr1risk">
+  <div class="modal">
+    <h2>⚠️ Cadastrar Risco Psicossocial (NR-1)</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Empresa</label><select id="nr1-client"></select></div>
+      <div class="form-group">
+        <label>Área de Risco (NR-1 Anexo III)</label>
+        <select id="nr1-area">
+          <option value="Organização do Trabalho">Organização do Trabalho</option>
+          <option value="Jornada de Trabalho">Jornada de Trabalho</option>
+          <option value="Condições do Ambiente">Condições do Ambiente</option>
+          <option value="Relações Socioprofissionais">Relações Socioprofissionais</option>
+          <option value="Estilo de Gestão">Estilo de Gestão</option>
+          <option value="Assédio Moral/Sexual">Assédio Moral/Sexual</option>
+          <option value="Violência no Trabalho">Violência no Trabalho</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Fator de Risco Identificado</label><input id="nr1-factor" placeholder="Ex: Sobrecarga de tarefas, metas inatingíveis..."/></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Probabilidade (1–5)</label>
+        <select id="nr1-prob">
+          <option value="1">1 – Raro</option>
+          <option value="2">2 – Improvável</option>
+          <option value="3" selected>3 – Possível</option>
+          <option value="4">4 – Provável</option>
+          <option value="5">5 – Quase Certo</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Severidade (1–5)</label>
+        <select id="nr1-sev">
+          <option value="1">1 – Insignificante</option>
+          <option value="2">2 – Menor</option>
+          <option value="3" selected>3 – Moderado</option>
+          <option value="4">4 – Grave</option>
+          <option value="5">5 – Catastrófico</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Observações / Evidências</label><textarea id="nr1-notes" placeholder="Descreva as evidências identificadas..." style="min-height:70px"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-nr1risk')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNR1Risk()">Cadastrar Risco</button>
+    </div>
+  </div>
+</div>
+
+<!-- Claude API Settings Modal -->
+<div class="modal-backdrop" id="modal-apikey">
+  <div class="modal" style="max-width:500px">
+    <h2>🔑 Configurar Chave da API Claude</h2>
+    <div class="api-warning">⚠️ A chave é armazenada apenas no seu navegador (localStorage). Esta configuração é para uso interno. Nunca compartilhe sua chave API.</div>
+    <div class="form-group">
+      <label>Chave API Anthropic (sk-ant-...)</label>
+      <input type="password" id="claude-key-input" placeholder="sk-ant-api03-..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:monospace;font-size:12px;outline:none"/>
+    </div>
+    <p style="font-size:12px;color:var(--muted);line-height:1.6">Acesse <strong>console.anthropic.com</strong> → API Keys para gerar sua chave. O sistema usa o modelo <strong>claude-sonnet-4-6</strong>.</p>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-apikey')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveClaKeyModal()">Salvar Chave</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-backdrop" id="modal-confirm">
+  <div class="modal" style="max-width:420px;text-align:center">
+    <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+    <h2 id="confirm-title" style="border:none;padding:0;margin-bottom:12px;font-size:17px"></h2>
+    <p id="confirm-msg" style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px"></p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-secondary" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONFIG & STATE
+// ══════════════════════════════════════════════════════════
+// OFFLINE_MODE é definido em config.js (true = localStorage, false = Supabase)
+// Garante compatibilidade caso config.js não seja carregado
+if(typeof OFFLINE_MODE === 'undefined') window.OFFLINE_MODE = true;
+
+let state = {
+  role: sessionStorage.getItem('ag_role') || 'admin',
+  user: sessionStorage.getItem('ag_user') || 'Admin',
+  clientId: sessionStorage.getItem('ag_client_id') || null,
+  currentPage: 'dashboard',
+  selectedCompany: 'all',
+  useStdQs: true,
+  customQuestions: [],
+};
+
+// ══════════════════════════════════════════════════════════
+// SEED DATA (localStorage-based)
+// ══════════════════════════════════════════════════════════
+function initSeedData(){
+  if(localStorage.getItem('ag_initialized')) return;
+
+  const clients=[
+    {id:'client-1',name:'Tech Solutions Ltda',cnpj:'12.345.678/0001-99',segment:'Tecnologia',headcount:85,contact_name:'Ana Silva',email:'rh@tech.com',password:'rh123',plan:'completo',status:'ativo'},
+    {id:'client-2',name:'Varejo Nordeste S/A',cnpj:'98.765.432/0001-11',segment:'Varejo',headcount:220,contact_name:'Carlos Melo',email:'rh@varejo.com',password:'rh456',plan:'intermediario',status:'ativo'},
+    {id:'client-3',name:'Clínica Saúde Total',cnpj:'55.555.555/0001-55',segment:'Saúde',headcount:42,contact_name:'Dra. Paula',email:'rh@saude.com',password:'rh789',plan:'basico',status:'ativo'},
+  ];
+
+  const surveys=[
+    {id:'survey-1',client_id:'client-1',title:'Clima Organizacional Q1',type:'clima',period:'trimestral',status:'concluida',total_invited:80,public_token:'tok-cli1-clim',deadline:'2025-03-31'},
+    {id:'survey-2',client_id:'client-1',title:'eNPS Fevereiro',type:'engajamento',period:'mensal',status:'ativa',total_invited:85,public_token:'tok-cli1-enps',deadline:'2025-02-28'},
+    {id:'survey-3',client_id:'client-2',title:'Engajamento Q1',type:'engajamento',period:'trimestral',status:'concluida',total_invited:200,public_token:'tok-cli2-eng',deadline:'2025-03-31'},
+    {id:'survey-4',client_id:'client-3',title:'NR-1 Saúde Mental',type:'nr1',period:'semestral',status:'ativa',total_invited:40,public_token:'tok-cli3-nr1',deadline:'2025-06-30'},
+    {id:'survey-5',client_id:'client-1',title:'Avaliação 360° Liderança',type:'360',period:'anual',status:'pausada',total_invited:30,public_token:'tok-cli1-360',deadline:'2025-04-30'},
+    {id:'survey-6',client_id:'client-2',title:'Felicidade no Trabalho',type:'felicidade',period:'mensal',status:'ativa',total_invited:220,public_token:'tok-cli2-fel',deadline:'2025-04-30'},
+  ];
+
+  const collabs=[
+    {id:'col-1',client_id:'client-1',name:'Maria Fernanda',email:'maria@tech.com',role:'Desenvolvedora Senior',department:'TI',regime:'CLT',salary:9800,admission_date:'2021-03-15',status:'ativo'},
+    {id:'col-2',client_id:'client-1',name:'João Pedro',email:'joao@tech.com',role:'Product Manager',department:'Produto',regime:'CLT',salary:12000,admission_date:'2019-07-01',status:'ativo'},
+    {id:'col-3',client_id:'client-1',name:'Carla Souza',email:'carla@tech.com',role:'Designer UX',department:'Design',regime:'PJ',salary:8500,admission_date:'2022-01-10',status:'ativo'},
+    {id:'col-4',client_id:'client-2',name:'Roberto Alves',email:'roberto@varejo.com',role:'Gerente de Loja',department:'Operações',regime:'CLT',salary:6200,admission_date:'2018-11-20',status:'ativo'},
+    {id:'col-5',client_id:'client-2',name:'Fernanda Lima',email:'fernanda@varejo.com',role:'Supervisora de Vendas',department:'Vendas',regime:'CLT',salary:4800,admission_date:'2020-05-12',status:'ativo'},
+    {id:'col-6',client_id:'client-3',name:'Dr. Paulo Cardoso',email:'paulo@saude.com',role:'Médico Clínico',department:'Clínica',regime:'PJ',salary:18000,admission_date:'2017-02-28',status:'ativo'},
+  ];
+
+  const responses=[
+    {id:'resp-1',survey_id:'survey-1',client_id:'client-1',respondent_name:'Anônimo',respondent_dept:'TI',overall_score:7.8,completed_at:'2025-03-10'},
+    {id:'resp-2',survey_id:'survey-1',client_id:'client-1',respondent_name:'Anônimo',respondent_dept:'Produto',overall_score:8.5,completed_at:'2025-03-11'},
+    {id:'resp-3',survey_id:'survey-1',client_id:'client-1',respondent_name:'Anônimo',respondent_dept:'Design',overall_score:6.9,completed_at:'2025-03-12'},
+    {id:'resp-4',survey_id:'survey-2',client_id:'client-1',respondent_name:'Anônimo',respondent_dept:'TI',overall_score:9.2,completed_at:'2025-02-15'},
+    {id:'resp-5',survey_id:'survey-3',client_id:'client-2',respondent_name:'Anônimo',respondent_dept:'Vendas',overall_score:6.1,completed_at:'2025-03-20'},
+    {id:'resp-6',survey_id:'survey-3',client_id:'client-2',respondent_name:'Anônimo',respondent_dept:'Operações',overall_score:7.3,completed_at:'2025-03-21'},
+    {id:'resp-7',survey_id:'survey-4',client_id:'client-3',respondent_name:'Anônimo',respondent_dept:'Clínica',overall_score:8.1,completed_at:'2025-04-01'},
+  ];
+
+  const answers=[
+    // survey-1 (clima) dimensions
+    {id:'a-1',survey_id:'survey-1',client_id:'client-1',dimension:'comunicacao',numeric_value:7.5},
+    {id:'a-2',survey_id:'survey-1',client_id:'client-1',dimension:'lideranca',numeric_value:8.2},
+    {id:'a-3',survey_id:'survey-1',client_id:'client-1',dimension:'trabalho_equipe',numeric_value:7.8},
+    {id:'a-4',survey_id:'survey-1',client_id:'client-1',dimension:'reconhecimento',numeric_value:6.4},
+    {id:'a-5',survey_id:'survey-1',client_id:'client-1',dimension:'crescimento',numeric_value:7.1},
+    {id:'a-6',survey_id:'survey-1',client_id:'client-1',dimension:'bem_estar',numeric_value:7.9},
+    // survey-2 (eNPS)
+    {id:'a-7',survey_id:'survey-2',client_id:'client-1',dimension:'nps',numeric_value:9},
+    {id:'a-8',survey_id:'survey-2',client_id:'client-1',dimension:'nps',numeric_value:8},
+    {id:'a-9',survey_id:'survey-2',client_id:'client-1',dimension:'nps',numeric_value:10},
+    {id:'a-10',survey_id:'survey-2',client_id:'client-1',dimension:'nps',numeric_value:7},
+    {id:'a-11',survey_id:'survey-2',client_id:'client-1',dimension:'nps',numeric_value:9},
+    // survey-3 (engajamento varejo)
+    {id:'a-12',survey_id:'survey-3',client_id:'client-2',dimension:'comunicacao',numeric_value:6.0},
+    {id:'a-13',survey_id:'survey-3',client_id:'client-2',dimension:'lideranca',numeric_value:6.5},
+    {id:'a-14',survey_id:'survey-3',client_id:'client-2',dimension:'trabalho_equipe',numeric_value:7.2},
+    {id:'a-15',survey_id:'survey-3',client_id:'client-2',dimension:'reconhecimento',numeric_value:5.8},
+    {id:'a-16',survey_id:'survey-3',client_id:'client-2',dimension:'crescimento',numeric_value:5.5},
+    {id:'a-17',survey_id:'survey-3',client_id:'client-2',dimension:'bem_estar',numeric_value:6.8},
+    // survey-4 (nr1 saude)
+    {id:'a-18',survey_id:'survey-4',client_id:'client-3',dimension:'saude_mental',numeric_value:8.0},
+    {id:'a-19',survey_id:'survey-4',client_id:'client-3',dimension:'burnout',numeric_value:3.2},
+    {id:'a-20',survey_id:'survey-4',client_id:'client-3',dimension:'suporte',numeric_value:8.5},
+    {id:'a-21',survey_id:'survey-4',client_id:'client-3',dimension:'equilibrio',numeric_value:7.1},
+  ];
+
+  const actions=[
+    {id:'act-1',client_id:'client-1',survey_id:'survey-1',title:'Programa de Reconhecimento Mensal',area:'RH',priority:'alta',responsible:'Ana Silva',deadline:'2025-06-30',status:'em_andamento',description:'Criar programa de kudos com premiação trimestral.'},
+    {id:'act-2',client_id:'client-1',survey_id:'survey-1',title:'Workshop de Comunicação Interna',area:'Comunicação',priority:'media',responsible:'João Pedro',deadline:'2025-05-15',status:'pendente',description:'Treinamento para líderes sobre comunicação assertiva.'},
+    {id:'act-3',client_id:'client-2',survey_id:'survey-3',title:'Plano de Carreira Estruturado',area:'RH',priority:'alta',responsible:'Carlos Melo',deadline:'2025-07-31',status:'pendente',description:'Mapeamento de competências e trilhas de crescimento.'},
+    {id:'act-4',client_id:'client-3',survey_id:'survey-4',title:'Programa de Bem-Estar NR-1',area:'SST',priority:'alta',responsible:'Dra. Paula',deadline:'2025-05-01',status:'em_andamento',description:'Implementação do PGRS conforme nova NR-1.'},
+  ];
+
+  const indicators=[
+    {id:'ind-1',client_id:'client-1',month:'2025-01',headcount:85,working_days:22,absenteeism_days:42,turnover_exits:2,admissions:1},
+    {id:'ind-2',client_id:'client-1',month:'2025-02',headcount:85,working_days:20,absenteeism_days:38,turnover_exits:1,admissions:2},
+    {id:'ind-3',client_id:'client-1',month:'2025-03',headcount:86,working_days:21,absenteeism_days:55,turnover_exits:3,admissions:1},
+    {id:'ind-4',client_id:'client-2',month:'2025-01',headcount:220,working_days:22,absenteeism_days:186,turnover_exits:9,admissions:5},
+    {id:'ind-5',client_id:'client-2',month:'2025-02',headcount:216,working_days:20,absenteeism_days:210,turnover_exits:13,admissions:4},
+    {id:'ind-6',client_id:'client-2',month:'2025-03',headcount:207,working_days:21,absenteeism_days:225,turnover_exits:11,admissions:6},
+    {id:'ind-7',client_id:'client-3',month:'2025-01',headcount:42,working_days:22,absenteeism_days:18,turnover_exits:1,admissions:0},
+    {id:'ind-8',client_id:'client-3',month:'2025-02',headcount:41,working_days:20,absenteeism_days:14,turnover_exits:0,admissions:1},
+    {id:'ind-9',client_id:'client-3',month:'2025-03',headcount:42,working_days:21,absenteeism_days:22,turnover_exits:2,admissions:1},
+  ];
+
+  const nr1risks=[
+    {id:'nr-1',client_id:'client-1',area:'Organização do Trabalho',factor:'Sobrecarga de tarefas e prazos curtos',probability:4,severity:4,notes:'Relatado por 35% dos respondentes da pesquisa de clima.',created_at:'2025-03-10'},
+    {id:'nr-2',client_id:'client-1',area:'Jornada de Trabalho',factor:'Horas extras frequentes sem compensação',probability:3,severity:3,notes:'Identificado via pesquisa de felicidade Q1.',created_at:'2025-03-10'},
+    {id:'nr-3',client_id:'client-1',area:'Estilo de Gestão',factor:'Comunicação deficiente com gestores intermediários',probability:2,severity:3,notes:'Score de liderança 6.8 — abaixo da média esperada.',created_at:'2025-03-10'},
+    {id:'nr-4',client_id:'client-2',area:'Organização do Trabalho',factor:'Metas comerciais inatingíveis',probability:5,severity:4,notes:'eNPS negativo e alto turnover confirmam este risco.',created_at:'2025-03-20'},
+    {id:'nr-5',client_id:'client-2',area:'Relações Socioprofissionais',factor:'Conflitos interpessoais entre supervisores e equipe',probability:4,severity:4,notes:'3 queixas formais no último trimestre.',created_at:'2025-03-20'},
+    {id:'nr-6',client_id:'client-2',area:'Jornada de Trabalho',factor:'Falta de folgas e revezamento irregular',probability:4,severity:3,notes:'Setor de logística mais afetado.',created_at:'2025-03-20'},
+    {id:'nr-7',client_id:'client-3',area:'Organização do Trabalho',factor:'Acúmulo de plantões em períodos de férias',probability:3,severity:3,notes:'Baixo risco geral — monitorar sazonalmente.',created_at:'2025-04-01'},
+    {id:'nr-8',client_id:'client-3',area:'Relações Socioprofissionais',factor:'Estresse de atendimento a pacientes em estado grave',probability:2,severity:4,notes:'Inerente à atividade — acompanhar com suporte psicológico.',created_at:'2025-04-01'},
+  ];
+
+  // Seed happiness answers
+  answers.push(
+    {id:'a-22',survey_id:'survey-6',client_id:'client-2',dimension:'felicidade',numeric_value:5.8},
+    {id:'a-23',survey_id:'survey-6',client_id:'client-2',dimension:'felicidade',numeric_value:6.2},
+    {id:'a-24',survey_id:'survey-6',client_id:'client-2',dimension:'felicidade',numeric_value:5.5},
+    {id:'a-25',survey_id:'survey-1',client_id:'client-1',dimension:'felicidade',numeric_value:7.5},
+    {id:'a-26',survey_id:'survey-1',client_id:'client-1',dimension:'felicidade',numeric_value:8.1},
+    {id:'a-27',survey_id:'survey-4',client_id:'client-3',dimension:'felicidade',numeric_value:8.4},
+  );
+
+  localStorage.setItem('ag_clients', JSON.stringify(clients));
+  localStorage.setItem('ag_surveys', JSON.stringify(surveys));
+  localStorage.setItem('ag_collaborators', JSON.stringify(collabs));
+  localStorage.setItem('ag_responses', JSON.stringify(responses));
+  localStorage.setItem('ag_answers', JSON.stringify(answers));
+  localStorage.setItem('ag_actions', JSON.stringify(actions));
+  localStorage.setItem('ag_indicators', JSON.stringify(indicators));
+  localStorage.setItem('ag_nr1risks', JSON.stringify(nr1risks));
+  localStorage.setItem('ag_initialized', '1');
+}
+
+// ══════════════════════════════════════════════════════════
+// DATA ACCESS (offline = localStorage)
+// ══════════════════════════════════════════════════════════
+function getData(key){ try{ return JSON.parse(localStorage.getItem('ag_'+key)||'[]'); }catch(e){return []} }
+function setData(key,arr){ localStorage.setItem('ag_'+key, JSON.stringify(arr)) }
+function addItem(key,item){ const arr=getData(key); arr.push(item); setData(key,arr) }
+function uid(){ return 'id-'+Date.now()+'-'+Math.random().toString(36).slice(2,7) }
+
+function getClients(){ return getData('clients') }
+function getSurveys(cid){ const all=getData('surveys'); return cid&&cid!='all'?all.filter(s=>s.client_id===cid):all }
+function getCollabs(cid){ const all=getData('collaborators'); return cid&&cid!='all'?all.filter(c=>c.client_id===cid):all }
+function getResponses(cid){ const all=getData('responses'); return cid&&cid!='all'?all.filter(r=>r.client_id===cid):all }
+function getAnswers(cid){ const all=getData('answers'); return cid&&cid!='all'?all.filter(a=>a.client_id===cid):all }
+function getActions(cid){ const all=getData('actions'); return cid&&cid!='all'?all.filter(a=>a.client_id===cid):all }
+function getIndicators(cid){ const all=getData('indicators'); return cid&&cid!='all'?all.filter(i=>i.client_id===cid):all }
+function getNR1Risks(cid){ const all=getData('nr1risks'); return cid&&cid!='all'?all.filter(r=>r.client_id===cid):all }
+function getClientById(id){ return getClients().find(c=>c.id===id) }
+function getSurveyById(id){ return getData('surveys').find(s=>s.id===id) }
+function getClaudeKey(){ return localStorage.getItem('ag_claude_key')||'' }
+function setClaudeKey(k){ localStorage.setItem('ag_claude_key',k) }
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+function init(){
+  initSeedData();
+  const role=state.role;
+  document.getElementById('user-name').textContent=state.user;
+  document.getElementById('user-role').textContent=role==='admin'?'Consultoria AG':'Empresa Cliente';
+  document.getElementById('av').textContent=state.user.charAt(0).toUpperCase();
+  if(role==='admin'){
+    document.getElementById('admin-only').style.display='block';
+  } else {
+    document.getElementById('company-select').style.display='none';
+    state.selectedCompany=state.clientId||'all';
+  }
+  populateCompanySelect();
+  if(state.clientId) state.selectedCompany=state.clientId;
+  showPage('dashboard');
+}
+
+function populateCompanySelect(){
+  const sel=document.getElementById('company-select');
+  const clients=getClients();
+  sel.innerHTML='<option value="all">Todas as empresas</option>';
+  clients.forEach(c=>{
+    const o=document.createElement('option');
+    o.value=c.id; o.textContent=c.name;
+    if(c.id===state.selectedCompany) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+function onCompanyChange(){
+  state.selectedCompany=document.getElementById('company-select').value;
+  renderPage(state.currentPage);
+}
+
+function doLogout(){
+  sessionStorage.clear();
+  window.location.href='index.html';
+}
+
+// ══════════════════════════════════════════════════════════
+// ROUTING
+// ══════════════════════════════════════════════════════════
+const PAGE_TITLES={
+  dashboard:'Dashboard',people:'People Analytics',indicadores:'Indicadores de RH',
+  surveys:'Pesquisas',results:'Resultados',questions:'Banco de Perguntas',
+  collaborators:'Colaboradores',actions:'Planos de Ação',matrizes:'Matrizes de Risco',
+  insights:'Insights IA',agente:'Agente IA',clients:'Clientes',reports:'Relatórios'
+};
+const TOPBAR_ACTIONS={
+  surveys:'+ Nova Pesquisa',collaborators:'+ Colaborador',actions:'+ Plano de Ação',
+  clients:'+ Novo Cliente',indicadores:'+ Lançar Indicadores',matrizes:'+ Cadastrar Risco',
+  agente:'⚙️ Config. API',
+};
+const TOPBAR_FNS={
+  surveys:'openNewSurveyModal()',collaborators:"openModal('modal-collab');populateClientSelects()",
+  actions:"openModal('modal-action');populateClientSelects()",clients:"openModal('modal-client')",
+  indicadores:"openModal('modal-indicator');populateClientSelects()",
+  matrizes:"openModal('modal-nr1risk');populateClientSelects()",
+  agente:"openModal('modal-apikey');loadClaudeKeyInput()",
+};
+
+function showPage(page){
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    if(el.textContent.trim().toLowerCase().includes(PAGE_TITLES[page]?.toLowerCase().split(' ')[0]?.toLowerCase()||'xx'))
+      el.classList.add('active');
+  });
+  state.currentPage=page;
+  document.getElementById('page-title').textContent=PAGE_TITLES[page]||page;
+  const ab=document.getElementById('topbar-action');
+  if(TOPBAR_ACTIONS[page]){
+    ab.textContent=TOPBAR_ACTIONS[page];
+    ab.onclick=new Function(TOPBAR_FNS[page]);
+    ab.style.display='';
+  } else {
+    ab.style.display='none';
+  }
+  renderPage(page);
+}
+
+function renderPage(page){
+  const cid=state.selectedCompany;
+  const el=document.getElementById('content');
+  switch(page){
+    case 'dashboard': el.innerHTML=renderDashboard(cid); initDashboardCharts(cid); break;
+    case 'people': el.innerHTML=renderPeople(cid); initPeopleCharts(cid); break;
+    case 'indicadores': el.innerHTML=renderIndicadores(cid); initIndicadoresCharts(cid); break;
+    case 'surveys': el.innerHTML=renderSurveys(cid); break;
+    case 'results': el.innerHTML=renderResults(cid); break;
+    case 'questions': el.innerHTML=renderQuestions(); break;
+    case 'collaborators': el.innerHTML=renderCollabs(cid); break;
+    case 'actions': el.innerHTML=renderActions(cid); break;
+    case 'matrizes': el.innerHTML=renderMatrizes(cid); break;
+    case 'insights': el.innerHTML=renderInsights(cid); break;
+    case 'agente': el.innerHTML=renderAgente(cid); initAgente(cid); break;
+    case 'clients': el.innerHTML=renderClients(); break;
+    case 'reports': el.innerHTML=renderReports(cid); break;
+    default: el.innerHTML='<div class="empty"><div class="empty-icon">🚧</div><h3>Em breve</h3><p>Esta seção está em desenvolvimento.</p></div>';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════
+function calcKPIs(cid){
+  const responses=getResponses(cid);
+  const surveys=getSurveys(cid);
+  const answers=getAnswers(cid);
+  const actions=getActions(cid);
+  const indicators=getIndicators(cid);
+
+  const npsAnswers=answers.filter(a=>a.dimension==='nps'&&a.numeric_value!=null);
+  const promoters=npsAnswers.filter(a=>a.numeric_value>=9).length;
+  const detractors=npsAnswers.filter(a=>a.numeric_value<=6).length;
+  const total=npsAnswers.length;
+  const enps=total>0?Math.round((promoters/total-detractors/total)*100):0;
+
+  const scores=responses.map(r=>r.overall_score).filter(v=>v!=null);
+  const avgScore=scores.length>0?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):0;
+
+  const activeSurveys=surveys.filter(s=>s.status==='ativa').length;
+  const pendingActions=actions.filter(a=>a.status==='pendente'||a.status==='em_andamento').length;
+
+  const clients=cid==='all'?getClients():[getClientById(cid)].filter(Boolean);
+  const totalHeadcount=clients.reduce((s,c)=>(c?s+(c.headcount||0):s),0);
+
+  // Happiness
+  const hapVals=answers.filter(a=>a.dimension==='felicidade'&&a.numeric_value!=null).map(a=>a.numeric_value);
+  const happiness=hapVals.length?(hapVals.reduce((s,v)=>s+v,0)/hapVals.length).toFixed(1):null;
+
+  // Latest period indicators
+  const sortedInd=[...indicators].sort((a,b)=>a.month.localeCompare(b.month));
+  const lastInd=sortedInd[sortedInd.length-1];
+  const absenteeism=lastInd?((lastInd.absenteeism_days/(lastInd.headcount*lastInd.working_days))*100).toFixed(1):null;
+  const turnover=lastInd?(((lastInd.turnover_exits+lastInd.admissions)/2/lastInd.headcount)*100).toFixed(1):null;
+  const retention=turnover?(100-parseFloat(turnover)).toFixed(1):null;
+
+  return {enps,avgScore,activeSurveys,totalResponses:responses.length,pendingActions,totalHeadcount,happiness,absenteeism,turnover,retention};
+}
+
+function renderDashboard(cid){
+  const k=calcKPIs(cid);
+  const enpsColor=k.enps>=50?'accent':k.enps>=0?'blue':'red';
+  const hapColor=k.happiness>=7?'var(--accent)':k.happiness>=5?'var(--orange)':'var(--danger)';
+  const absColor=!k.absenteeism?'var(--muted)':k.absenteeism>4?'var(--danger)':k.absenteeism>2?'var(--orange)':'var(--accent)';
+  const tvColor=!k.turnover?'var(--muted)':k.turnover>5?'var(--danger)':k.turnover>3?'var(--orange)':'var(--accent)';
+  const rtColor=!k.retention?'var(--muted)':k.retention>=97?'var(--accent)':k.retention>=92?'var(--primary)':k.retention>=88?'var(--orange)':'var(--danger)';
+  return `
+<div class="kpi-grid">
+  <div class="kpi-card ${enpsColor}">
+    <div class="kpi-icon">🎯</div>
+    <div class="kpi-label">eNPS</div>
+    <div class="kpi-value" style="color:var(--${enpsColor==='accent'?'accent':enpsColor==='blue'?'primary':'danger'})">${k.enps}</div>
+    <div class="kpi-sub">${k.enps>=50?'Excelente':k.enps>=0?'Neutro':'Crítico'}</div>
+  </div>
+  <div class="kpi-card blue">
+    <div class="kpi-icon">⭐</div>
+    <div class="kpi-label">Score Médio</div>
+    <div class="kpi-value" style="color:var(--primary)">${k.avgScore}</div>
+    <div class="kpi-sub">de 10 pontos</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">😊</div>
+    <div class="kpi-label">Índice de Felicidade</div>
+    <div class="kpi-value" style="color:${k.happiness?hapColor:'var(--muted)'}">${k.happiness??'—'}</div>
+    <div class="kpi-sub">${k.happiness?(k.happiness>=7?'Colaboradores felizes':k.happiness>=5?'Atenção':'Situação crítica'):'Sem dados'}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">📅</div>
+    <div class="kpi-label">Absenteísmo</div>
+    <div class="kpi-value" style="color:${absColor}">${k.absenteeism?k.absenteeism+'%':'—'}</div>
+    <div class="kpi-sub">${k.absenteeism?(k.absenteeism>4?'Acima benchmark':k.absenteeism>2?'Moderado':'Saudável'):'Lance dados'}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">🔄</div>
+    <div class="kpi-label">Turnover Mensal</div>
+    <div class="kpi-value" style="color:${tvColor}">${k.turnover?k.turnover+'%':'—'}</div>
+    <div class="kpi-sub">${k.turnover?(k.turnover>5?'Alto':'Controlado'):'Lance dados'}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">🧲</div>
+    <div class="kpi-label">Retenção</div>
+    <div class="kpi-value" style="color:${rtColor}">${k.retention?k.retention+'%':'—'}</div>
+    <div class="kpi-sub">${k.retention?(k.retention>=95?'Excelente':k.retention>=90?'Adequada':'Risco de perda'):'Baseado no turnover'}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">👥</div>
+    <div class="kpi-label">Headcount</div>
+    <div class="kpi-value" style="color:var(--accent)">${k.totalHeadcount}</div>
+    <div class="kpi-sub">colaboradores</div>
+  </div>
+  <div class="kpi-card purple">
+    <div class="kpi-icon">📋</div>
+    <div class="kpi-label">Pesquisas Ativas</div>
+    <div class="kpi-value" style="color:var(--secondary)">${k.activeSurveys}</div>
+    <div class="kpi-sub">em andamento</div>
+  </div>
+  <div class="kpi-card blue">
+    <div class="kpi-icon">💬</div>
+    <div class="kpi-label">Respostas</div>
+    <div class="kpi-value" style="color:var(--primary)">${k.totalResponses}</div>
+    <div class="kpi-sub">total coletadas</div>
+  </div>
+  <div class="kpi-card orange">
+    <div class="kpi-icon">✅</div>
+    <div class="kpi-label">Ações Abertas</div>
+    <div class="kpi-value" style="color:var(--orange)">${k.pendingActions}</div>
+    <div class="kpi-sub">planos pendentes</div>
+  </div>
+</div>
+<div class="charts-grid">
+  <div class="chart-card"><div class="chart-title">Dimensões por Clima</div><div class="chart-wrap"><canvas id="chart-radar"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">Distribuição eNPS</div><div class="chart-wrap"><canvas id="chart-enps"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">Status das Pesquisas</div><div class="chart-wrap"><canvas id="chart-status"></canvas></div></div>
+</div>
+<div class="charts-grid two">
+  <div class="chart-card"><div class="chart-title">Tendência de Score Mensal</div><div class="chart-wrap"><canvas id="chart-trend"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">Respostas por Empresa</div><div class="chart-wrap"><canvas id="chart-company"></canvas></div></div>
+</div>`;
+}
+
+function destroyChart(id){
+  const ex=Chart.getChart(id);
+  if(ex) ex.destroy();
+}
+
+function initDashboardCharts(cid){
+  const answers=getAnswers(cid);
+  const surveys=getSurveys(cid);
+  const responses=getResponses(cid);
+
+  // Radar — dimension scores
+  const dims=['comunicacao','lideranca','trabalho_equipe','reconhecimento','crescimento','bem_estar'];
+  const dimLabels={'comunicacao':'Comunicação','lideranca':'Liderança','trabalho_equipe':'Eq. Trabalho','reconhecimento':'Reconhecimento','crescimento':'Crescimento','bem_estar':'Bem-estar'};
+  const radarData=dims.map(d=>{
+    const vals=answers.filter(a=>a.dimension===d&&a.numeric_value!=null).map(a=>a.numeric_value);
+    return vals.length>0?(vals.reduce((s,v)=>s+v,0)/vals.length).toFixed(1):0;
+  });
+  destroyChart('chart-radar');
+  new Chart(document.getElementById('chart-radar'),{
+    type:'radar',
+    data:{labels:dims.map(d=>dimLabels[d]),datasets:[{label:'Score',data:radarData,backgroundColor:'rgba(54,98,255,.2)',borderColor:'#3662FF',borderWidth:2,pointBackgroundColor:'#3662FF'}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:10,ticks:{color:'#8B9CC0',backdropColor:'transparent',stepSize:2},grid:{color:'rgba(255,255,255,.05)'},pointLabels:{color:'#8B9CC0',font:{size:11}}}},plugins:{legend:{display:false}}}
+  });
+
+  // eNPS doughnut
+  const npsVals=answers.filter(a=>a.dimension==='nps'&&a.numeric_value!=null);
+  const prom=npsVals.filter(a=>a.numeric_value>=9).length;
+  const pass=npsVals.filter(a=>a.numeric_value>=7&&a.numeric_value<9).length;
+  const detr=npsVals.filter(a=>a.numeric_value<7).length;
+  destroyChart('chart-enps');
+  new Chart(document.getElementById('chart-enps'),{
+    type:'doughnut',
+    data:{labels:['Promotores','Neutros','Detratores'],datasets:[{data:[prom,pass,detr],backgroundColor:['#08C16A','#3662FF','#FF5C5C'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8B9CC0',font:{size:11},padding:8}}},cutout:'65%'}
+  });
+
+  // Survey status
+  const active=surveys.filter(s=>s.status==='ativa').length;
+  const done=surveys.filter(s=>s.status==='concluida').length;
+  const paused=surveys.filter(s=>s.status==='pausada').length;
+  destroyChart('chart-status');
+  new Chart(document.getElementById('chart-status'),{
+    type:'doughnut',
+    data:{labels:['Ativa','Concluída','Pausada'],datasets:[{data:[active,done,paused],backgroundColor:['#08C16A','#3662FF','#FFBC7D'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8B9CC0',font:{size:11},padding:8}}},cutout:'65%'}
+  });
+
+  // Trend line
+  const months=['Jan','Fev','Mar','Abr','Mai','Jun'];
+  const monthScores=months.map((_,i)=>{
+    const m=responses.filter(r=>{
+      if(!r.completed_at) return false;
+      return new Date(r.completed_at).getMonth()===i;
+    });
+    return m.length>0?(m.reduce((s,r)=>s+(r.overall_score||0),0)/m.length).toFixed(1):null;
+  });
+  destroyChart('chart-trend');
+  new Chart(document.getElementById('chart-trend'),{
+    type:'line',
+    data:{labels:months,datasets:[{label:'Score Médio',data:monthScores,borderColor:'#3662FF',backgroundColor:'rgba(54,98,255,.1)',fill:true,tension:.4,pointBackgroundColor:'#3662FF',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:10,ticks:{color:'#8B9CC0'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#8B9CC0'},grid:{display:false}}},plugins:{legend:{display:false}}}
+  });
+
+  // Company bar
+  const clientsList=cid==='all'?getClients():[getClientById(cid)].filter(Boolean);
+  const compLabels=clientsList.map(c=>c.name.split(' ')[0]);
+  const compData=clientsList.map(c=>{
+    const r=getResponses(c.id);
+    const scores=r.map(x=>x.overall_score).filter(Boolean);
+    return scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):0;
+  });
+  destroyChart('chart-company');
+  new Chart(document.getElementById('chart-company'),{
+    type:'bar',
+    data:{labels:compLabels,datasets:[{label:'Score Médio',data:compData,backgroundColor:['#3662FF','#A55EFF','#08C16A','#FFBC7D'],borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:10,ticks:{color:'#8B9CC0'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#8B9CC0'},grid:{display:false}}},plugins:{legend:{display:false}}}
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// PEOPLE ANALYTICS
+// ══════════════════════════════════════════════════════════
+function renderPeople(cid){
+  const collabs=getCollabs(cid);
+  const responses=getResponses(cid);
+  const clients=cid==='all'?getClients():[getClientById(cid)].filter(Boolean);
+  const totalHC=clients.reduce((s,c)=>(c?s+(c.headcount||0):s),0);
+  const avgScore=responses.length?(responses.reduce((s,r)=>s+(r.overall_score||0),0)/responses.length).toFixed(1):0;
+  const answers=getAnswers(cid);
+  const npsVals=answers.filter(a=>a.dimension==='nps'&&a.numeric_value!=null);
+  const prom=npsVals.filter(a=>a.numeric_value>=9).length;
+  const detr=npsVals.filter(a=>a.numeric_value<=6).length;
+  const enps=npsVals.length?Math.round((prom/npsVals.length-detr/npsVals.length)*100):0;
+  const turnover=((collabs.filter(c=>c.status==='inativo').length/Math.max(totalHC,1))*100).toFixed(1);
+  const actions=getActions(cid);
+  const pdis=actions.filter(a=>a.status!=='concluido').length;
+
+  return `
+<div class="pa-grid">
+  <div class="pa-card">
+    <div class="pa-card-title">eNPS — Employee Net Promoter</div>
+    <div class="gauge"><div class="gauge-val" style="color:${enps>=50?'var(--accent)':enps>=0?'var(--primary)':'var(--danger)'}">${enps}</div><div class="gauge-label">${enps>=50?'Excelente':enps>=0?'Zona Neutra':'Zona Crítica'}</div></div>
+    <div class="progress-bar"><div class="progress-fill ${enps<0?'bad':enps<30?'warn':''}" style="width:${Math.min(100,Math.max(0,(enps+100)/2))}%"></div></div>
+  </div>
+  <div class="pa-card">
+    <div class="pa-card-title">Score de Engajamento</div>
+    <div class="gauge"><div class="gauge-val" style="color:var(--primary)">${avgScore}</div><div class="gauge-label">de 10 pontos</div></div>
+    <div class="progress-bar"><div class="progress-fill ${avgScore<5?'bad':avgScore<7?'warn':''}" style="width:${avgScore*10}%"></div></div>
+  </div>
+  <div class="pa-card">
+    <div class="pa-card-title">Headcount Total</div>
+    <div class="gauge"><div class="gauge-val" style="color:var(--accent)">${totalHC}</div><div class="gauge-label">colaboradores ativos</div></div>
+  </div>
+  <div class="pa-card">
+    <div class="pa-card-title">Turnover</div>
+    <div class="gauge"><div class="gauge-val" style="color:${parseFloat(turnover)>15?'var(--danger)':'var(--accent)'}">${turnover}%</div><div class="gauge-label">${parseFloat(turnover)>15?'Atenção requerida':'Dentro do esperado'}</div></div>
+    <div class="progress-bar"><div class="progress-fill ${parseFloat(turnover)>15?'bad':parseFloat(turnover)>8?'warn':''}" style="width:${Math.min(100,turnover*4)}%"></div></div>
+  </div>
+  <div class="pa-card">
+    <div class="pa-card-title">PDIs / Ações Abertas</div>
+    <div class="gauge"><div class="gauge-val" style="color:var(--orange)">${pdis}</div><div class="gauge-label">planos em aberto</div></div>
+  </div>
+  <div class="pa-card">
+    <div class="pa-card-title">Respostas Coletadas</div>
+    <div class="gauge"><div class="gauge-val" style="color:var(--secondary)">${responses.length}</div><div class="gauge-label">total de respondentes</div></div>
+  </div>
+</div>
+<div class="charts-grid">
+  <div class="chart-card"><div class="chart-title">Radar de Dimensões</div><div class="chart-wrap"><canvas id="pa-radar"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">Distribuição NPS</div><div class="chart-wrap"><canvas id="pa-nps"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">Departamentos</div><div class="chart-wrap"><canvas id="pa-dept"></canvas></div></div>
+</div>`;
+}
+
+function initPeopleCharts(cid){
+  const answers=getAnswers(cid);
+  const collabs=getCollabs(cid);
+
+  const dims=['comunicacao','lideranca','trabalho_equipe','reconhecimento','crescimento','bem_estar','saude_mental','burnout','suporte','equilibrio'];
+  const dimLabels={comunicacao:'Comunicação',lideranca:'Liderança',trabalho_equipe:'Eq. Trabalho',reconhecimento:'Reconhecimento',crescimento:'Crescimento',bem_estar:'Bem-estar',saude_mental:'Saúde Mental',burnout:'Burnout (inv)',suporte:'Suporte',equilibrio:'Equilíbrio'};
+  const presentDims=dims.filter(d=>answers.some(a=>a.dimension===d));
+  const radarData=presentDims.map(d=>{
+    const vals=answers.filter(a=>a.dimension===d&&a.numeric_value!=null).map(a=>a.numeric_value);
+    return vals.length?(vals.reduce((s,v)=>s+v,0)/vals.length).toFixed(1):0;
+  });
+  destroyChart('pa-radar');
+  new Chart(document.getElementById('pa-radar'),{
+    type:'radar',
+    data:{labels:presentDims.map(d=>dimLabels[d]||d),datasets:[{label:'Média',data:radarData,backgroundColor:'rgba(165,94,255,.2)',borderColor:'#A55EFF',borderWidth:2,pointBackgroundColor:'#A55EFF'}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:10,ticks:{color:'#8B9CC0',backdropColor:'transparent',stepSize:2},grid:{color:'rgba(255,255,255,.05)'},pointLabels:{color:'#8B9CC0',font:{size:10}}}},plugins:{legend:{display:false}}}
+  });
+
+  const npsVals=answers.filter(a=>a.dimension==='nps');
+  const prom=npsVals.filter(a=>a.numeric_value>=9).length;
+  const pass=npsVals.filter(a=>a.numeric_value>=7&&a.numeric_value<9).length;
+  const detr=npsVals.filter(a=>a.numeric_value<7).length;
+  destroyChart('pa-nps');
+  new Chart(document.getElementById('pa-nps'),{
+    type:'doughnut',
+    data:{labels:['Promotores','Neutros','Detratores'],datasets:[{data:[prom,pass,detr],backgroundColor:['#08C16A','#3662FF','#FF5C5C'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8B9CC0',font:{size:11}}}},cutout:'60%'}
+  });
+
+  const depts=[...new Set(collabs.map(c=>c.department).filter(Boolean))];
+  const deptCounts=depts.map(d=>collabs.filter(c=>c.department===d).length);
+  destroyChart('pa-dept');
+  new Chart(document.getElementById('pa-dept'),{
+    type:'bar',
+    data:{labels:depts,datasets:[{label:'Colaboradores',data:deptCounts,backgroundColor:['#3662FF','#A55EFF','#08C16A','#FFBC7D','#FF5C5C'],borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{ticks:{color:'#8B9CC0'},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#8B9CC0'},grid:{display:false}}},plugins:{legend:{display:false}}}
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// SURVEYS
+// ══════════════════════════════════════════════════════════
+const SURVEY_TYPE_LABELS={clima:'Clima Organizacional',engajamento:'Engajamento',360:'Avaliação 360°',180:'Avaliação 180°',lideranca:'Liderança',felicidade:'Felicidade',nr1:'NR-1',onboarding:'Onboarding',desligamento:'Desligamento',saude:'Saúde'};
+
+function renderSurveys(cid){
+  const surveys=getSurveys(cid);
+  if(!surveys.length) return `<div class="section-header"><h2>Pesquisas</h2></div><div class="empty"><div class="empty-icon">📋</div><h3>Nenhuma pesquisa</h3><p>Crie a primeira pesquisa clicando em "+ Nova Pesquisa".</p></div>`;
+  const cards=surveys.map(s=>{
+    const client=getClientById(s.client_id);
+    const statusBadge={ativa:'badge-green',concluida:'badge-blue',pausada:'badge-orange'}[s.status]||'badge-gray';
+    const link=`responder.html?token=${s.public_token}`;
+    return `<div class="s-card">
+      <div class="s-card-type">${SURVEY_TYPE_LABELS[s.type]||s.type}</div>
+      <h3>${s.title}</h3>
+      <p>${client?.name||'—'} · ${s.period||'pontual'} · <span class="badge ${statusBadge}">${s.status}</span></p>
+      <div class="s-card-footer">
+        <div class="s-card-stat"><strong>${s.total_invited}</strong> convidados</div>
+        <div class="s-card-actions">
+          <button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText(window.location.origin+'/ag_rh_v2/${link}');notify('Link copiado!','success')">🔗</button>
+          <button class="btn btn-sm btn-primary" onclick="openResults('${s.id}')">Ver</button>
+          ${s.status==='ativa'?`<button class="btn btn-sm btn-secondary" onclick="changeSurveyStatus('${s.id}','pausada')">⏸</button>`:''}
+          ${s.status==='pausada'?`<button class="btn btn-sm btn-secondary" onclick="changeSurveyStatus('${s.id}','ativa')">▶</button>`:''}
+          ${s.status!=='concluida'?`<button class="btn btn-sm btn-secondary" onclick="changeSurveyStatus('${s.id}','concluida')">✓</button>`:''}
+          <button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.2)" onclick="confirmAction('Apagar pesquisa?','As respostas e dados desta pesquisa serão apagados permanentemente.','deleteSurvey','${s.id}')">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="section-header"><h2>Pesquisas (${surveys.length})</h2></div><div class="survey-cards">${cards}</div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// RESULTS
+// ══════════════════════════════════════════════════════════
+function renderResults(cid){
+  const surveys=getSurveys(cid);
+  const withResp=surveys.filter(s=>{
+    const r=getResponses(s.client_id).filter(x=>x.survey_id===s.id);
+    return r.length>0;
+  });
+  if(!withResp.length) return `<div class="empty"><div class="empty-icon">🎯</div><h3>Sem resultados</h3><p>Ainda não há respostas coletadas para as pesquisas desta seleção.</p></div>`;
+  return `<div class="section-header"><h2>Resultados</h2></div>
+  <div class="survey-cards">${withResp.map(s=>{
+    const r=getResponses(s.client_id).filter(x=>x.survey_id===s.id);
+    const avg=r.length?(r.reduce((a,b)=>a+(b.overall_score||0),0)/r.length).toFixed(1):'-';
+    const client=getClientById(s.client_id);
+    return `<div class="s-card" onclick="openResults('${s.id}')">
+      <div class="s-card-type">${SURVEY_TYPE_LABELS[s.type]||s.type}</div>
+      <h3>${s.title}</h3>
+      <p>${client?.name||'—'}</p>
+      <div class="s-card-footer">
+        <div class="s-card-stat"><strong>${r.length}</strong> respostas · Score: <strong>${avg}</strong></div>
+        <button class="btn btn-sm btn-primary">Detalhes</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function openResults(surveyId){
+  const survey=getSurveyById(surveyId);
+  if(!survey) return;
+  const client=getClientById(survey.client_id);
+  const responses=getResponses(survey.client_id).filter(r=>r.survey_id===surveyId);
+  const answers=getAnswers(survey.client_id).filter(a=>a.survey_id===surveyId);
+  const avg=responses.length?(responses.reduce((a,b)=>a+(b.overall_score||0),0)/responses.length).toFixed(1):'-';
+  const npsVals=answers.filter(a=>a.dimension==='nps');
+  const prom=npsVals.filter(a=>a.numeric_value>=9).length;
+  const detr=npsVals.filter(a=>a.numeric_value<=6).length;
+  const enps=npsVals.length?Math.round((prom/npsVals.length-detr/npsVals.length)*100):'-';
+
+  const dims=[...new Set(answers.filter(a=>a.dimension&&a.numeric_value!=null&&a.dimension!=='nps').map(a=>a.dimension))];
+  const dimRows=dims.map(d=>{
+    const vals=answers.filter(a=>a.dimension===d&&a.numeric_value!=null).map(a=>a.numeric_value);
+    const avg2=vals.length?(vals.reduce((s,v)=>s+v,0)/vals.length).toFixed(1):'-';
+    const pct=parseFloat(avg2)*10;
+    return `<tr><td>${d.replace(/_/g,' ')}</td><td><div style="display:flex;align-items:center;gap:10px"><div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:${pct}%"></div></div><strong>${avg2}</strong></div></td></tr>`;
+  }).join('');
+
+  document.getElementById('results-content').innerHTML=`
+    <h2>📊 ${survey.title}</h2>
+    <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+      <div style="background:var(--surface2);border-radius:10px;padding:14px 20px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--primary)">${avg}</div><div style="font-size:11px;color:var(--muted)">Score Médio</div></div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px 20px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--accent)">${responses.length}</div><div style="font-size:11px;color:var(--muted)">Respostas</div></div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px 20px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--secondary)">${enps}</div><div style="font-size:11px;color:var(--muted)">eNPS</div></div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px 20px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--orange)">${client?.name||'—'}</div><div style="font-size:11px;color:var(--muted)">Empresa</div></div>
+    </div>
+    ${dims.length?`<table style="width:100%;border-collapse:collapse">
+      <thead><tr style="background:var(--surface2)"><th style="padding:10px 16px;text-align:left;font-size:11px;color:var(--muted)">Dimensão</th><th style="padding:10px 16px;text-align:left;font-size:11px;color:var(--muted)">Score</th></tr></thead>
+      <tbody>${dimRows}</tbody>
+    </table>`:'<p style="color:var(--muted);font-size:13px">Sem dados de dimensão para esta pesquisa.</p>'}
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modal-results')">Fechar</button></div>`;
+  openModal('modal-results');
+}
+
+// ══════════════════════════════════════════════════════════
+// BANK OF QUESTIONS
+// ══════════════════════════════════════════════════════════
+const STD_QUESTIONS={
+  clima:[
+    {text:'Como você avalia a comunicação interna da empresa?',type:'likert',dimension:'comunicacao'},
+    {text:'Seu gestor imediato reconhece suas contribuições?',type:'likert',dimension:'reconhecimento'},
+    {text:'Você se sente parte do time e dos resultados?',type:'likert',dimension:'trabalho_equipe'},
+    {text:'A empresa oferece condições adequadas para seu desenvolvimento?',type:'likert',dimension:'crescimento'},
+    {text:'Como você avalia o ambiente e bem-estar no trabalho?',type:'likert',dimension:'bem_estar'},
+    {text:'Você recomendaria a empresa como ótimo lugar para trabalhar? (0-10)',type:'nps',dimension:'nps'},
+  ],
+  engajamento:[
+    {text:'Você recomendaria a empresa como lugar para trabalhar? (0-10)',type:'nps',dimension:'nps'},
+    {text:'Quão engajado você se sente com os objetivos da empresa?',type:'likert',dimension:'engajamento'},
+    {text:'Você sente que seu trabalho tem propósito e impacto?',type:'likert',dimension:'proposito'},
+  ],
+  nr1:[
+    {text:'Como você avalia seu nível atual de estresse no trabalho?',type:'likert',dimension:'saude_mental'},
+    {text:'Você consegue equilibrar vida pessoal e profissional?',type:'likert',dimension:'equilibrio'},
+    {text:'Sente que tem suporte da empresa em momentos difíceis?',type:'likert',dimension:'suporte'},
+    {text:'Nos últimos 30 dias, sentiu sintomas de esgotamento (burnout)?',type:'likert',dimension:'burnout'},
+  ],
+  felicidade:[
+    {text:'Você está feliz com seu trabalho atualmente?',type:'likert',dimension:'felicidade'},
+    {text:'Seu trabalho está alinhado com seus valores pessoais?',type:'likert',dimension:'proposito'},
+    {text:'Você se sente valorizado pela empresa?',type:'likert',dimension:'reconhecimento'},
+  ],
+  360:[
+    {text:'O colaborador avaliado demonstra liderança positiva?',type:'likert',dimension:'lideranca'},
+    {text:'Ele/ela comunica bem e de forma clara?',type:'likert',dimension:'comunicacao'},
+    {text:'Colabora bem com a equipe?',type:'likert',dimension:'trabalho_equipe'},
+  ],
+  lideranca:[
+    {text:'Seu líder comunica a visão e metas com clareza?',type:'likert',dimension:'lideranca'},
+    {text:'Ele/ela dá feedback construtivo regularmente?',type:'likert',dimension:'feedback'},
+    {text:'Você confia nas decisões do seu gestor?',type:'likert',dimension:'confianca'},
+  ],
+  onboarding:[
+    {text:'O processo de integração foi bem estruturado?',type:'likert',dimension:'onboarding'},
+    {text:'Você recebeu as informações necessárias para iniciar?',type:'likert',dimension:'onboarding'},
+    {text:'Você recomendaria a empresa para amigos? (0-10)',type:'nps',dimension:'nps'},
+  ],
+  desligamento:[
+    {text:'Por que você está deixando a empresa?',type:'discursiva',dimension:'motivo'},
+    {text:'A empresa tratou você com respeito durante sua jornada?',type:'likert',dimension:'cultura'},
+    {text:'Você recomendaria a empresa como empregador? (0-10)',type:'nps',dimension:'nps'},
+  ],
+};
+
+function renderQuestions(){
+  const types=Object.keys(STD_QUESTIONS);
+  return `<div class="section-header"><h2>Banco de Perguntas Padrão</h2></div>
+  <div class="ctabs">${types.map((t,i)=>`<div class="ctab ${i===0?'active':''}" onclick="switchQTab('${t}',this)">${SURVEY_TYPE_LABELS[t]||t}</div>`).join('')}</div>
+  <div id="q-tab-content">${renderQTab(types[0])}</div>`;
+}
+
+function renderQTab(type){
+  const qs=STD_QUESTIONS[type]||[];
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Pergunta</th><th>Tipo</th><th>Dimensão</th></tr></thead>
+    <tbody>${qs.map((q,i)=>`<tr><td style="color:var(--muted)">${i+1}</td><td>${q.text}</td><td><span class="badge badge-blue">${q.type}</span></td><td><span class="badge badge-purple">${q.dimension}</span></td></tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+function switchQTab(type,el){
+  document.querySelectorAll('.ctab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('q-tab-content').innerHTML=renderQTab(type);
+}
+
+// ══════════════════════════════════════════════════════════
+// COLLABORATORS
+// ══════════════════════════════════════════════════════════
+function renderCollabs(cid){
+  const collabs=getCollabs(cid);
+  if(!collabs.length) return `<div class="section-header"><h2>Colaboradores</h2></div><div class="empty"><div class="empty-icon">👥</div><h3>Nenhum colaborador</h3><p>Adicione colaboradores clicando no botão acima.</p></div>`;
+  return `<div class="section-header"><h2>Colaboradores (${collabs.length})</h2></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Nome</th><th>Cargo</th><th>Departamento</th><th>Empresa</th><th>Regime</th><th>Status</th></tr></thead>
+    <tbody>${collabs.map(c=>{
+      const client=getClientById(c.client_id);
+      return `<tr>
+        <td><strong>${c.name}</strong><br/><span style="font-size:11px;color:var(--muted)">${c.email||''}</span></td>
+        <td>${c.role||'—'}</td><td>${c.department||'—'}</td>
+        <td>${client?.name||'—'}</td>
+        <td><span class="badge badge-gray">${c.regime||'—'}</span></td>
+        <td><span class="badge ${c.status==='ativo'?'badge-green':'badge-red'}">${c.status||'ativo'}</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// ACTIONS
+// ══════════════════════════════════════════════════════════
+function renderActions(cid){
+  const actions=getActions(cid);
+  if(!actions.length) return `<div class="section-header"><h2>Planos de Ação</h2></div><div class="empty"><div class="empty-icon">✅</div><h3>Nenhum plano</h3><p>Crie planos de ação baseados nos resultados das pesquisas.</p></div>`;
+  const priorityBadge={alta:'badge-red',media:'badge-orange',baixa:'badge-green'};
+  const statusBadge={pendente:'badge-orange',em_andamento:'badge-blue',concluido:'badge-green'};
+  return `<div class="section-header"><h2>Planos de Ação (${actions.length})</h2></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Título</th><th>Empresa</th><th>Área</th><th>Responsável</th><th>Prazo</th><th>Prioridade</th><th>Status</th></tr></thead>
+    <tbody>${actions.map(a=>{
+      const client=getClientById(a.client_id);
+      return `<tr>
+        <td><strong>${a.title}</strong></td>
+        <td>${client?.name||'—'}</td><td>${a.area||'—'}</td><td>${a.responsible||'—'}</td>
+        <td>${a.deadline||'—'}</td>
+        <td><span class="badge ${priorityBadge[a.priority]||'badge-gray'}">${a.priority}</span></td>
+        <td><span class="badge ${statusBadge[a.status]||'badge-gray'}">${(a.status||'').replace('_',' ')}</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// INSIGHTS IA (com notas de especialista + Claude)
+// ══════════════════════════════════════════════════════════
+function renderInsights(cid){
+  const answers=getAnswers(cid);
+  const responses=getResponses(cid);
+  const surveys=getSurveys(cid).filter(s=>getResponses(s.client_id).some(r=>r.survey_id===s.id));
+  const autoInsights=generateInsights(cid,answers,responses);
+  const hasKey=!!getClaudeKey();
+  const storedAI=localStorage.getItem('ag_ai_insights_'+cid)||'';
+
+  return `
+<div class="section-header"><h2>Insights IA</h2><span style="font-size:12px;color:var(--muted)">Análise automática + IA generativa com Claude</span></div>
+
+<!-- Specialist Notes -->
+<div class="specialist-box">
+  <h3>📝 Análise do Especialista</h3>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Adicione contexto qualitativo e observações da sua análise. A IA usará essas notas junto com os dados das pesquisas para gerar insights mais ricos.</p>
+  <select id="ins-survey-sel" style="min-height:unset;resize:none;margin-bottom:10px">
+    <option value="all">Consolidado — todas as pesquisas</option>
+    ${surveys.map(s=>`<option value="${s.id}">${s.title} (${SURVEY_TYPE_LABELS[s.type]||s.type})</option>`).join('')}
+  </select>
+  <textarea id="ins-specialist-notes" placeholder="Ex: A queda no score de comunicação coincide com a troca de gestores em março. Os dados de NR-1 indicam sobrecarga especialmente no setor de logística. Sugiro priorizar ações de escuta ativa e revisão de metas..." onchange="saveSpecialistNotes()">${localStorage.getItem('ag_specialist_notes_'+cid)||''}</textarea>
+  ${!hasKey?`<div class="api-warning">⚠️ Configure a chave da API Claude (menu "Agente IA" → ⚙️ Config. API) para gerar insights com IA generativa.</div>`:''}
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="generateAIInsights('${cid}')" ${!hasKey?'disabled title="Configure a API key primeiro"':''}>🤖 Gerar Insights com IA</button>
+    <button class="btn btn-secondary" onclick="clearAIInsights('${cid}')">🗑 Limpar Resposta IA</button>
+  </div>
+</div>
+
+<!-- AI Generated Insights -->
+<div id="ai-insights-area">
+  ${storedAI?`<div class="ai-insight-card"><div class="ai-tag">🤖 Gerado por Claude (AG People Analytics)</div><h4>Análise Integrada</h4><p>${storedAI}</p></div>`:''}
+</div>
+
+<!-- Auto Insights -->
+<div class="section-header" style="margin-top:16px"><h2>Insights Automáticos</h2><span style="font-size:12px;color:var(--muted)">Baseados nos dados coletados</span></div>
+<div class="insights-grid">${autoInsights.map(i=>`
+  <div class="insight-card ${i.sentiment}">
+    <div class="insight-type">${i.sentiment==='positive'?'✅ Ponto Forte':i.sentiment==='negative'?'⚠️ Ponto de Atenção':'💡 Recomendação'}</div>
+    <h3>${i.title}</h3>
+    <p>${i.body}</p>
+  </div>`).join('')}
+</div>`;
+}
+
+function saveSpecialistNotes(){
+  const notes=document.getElementById('ins-specialist-notes')?.value||'';
+  const cid=state.selectedCompany;
+  localStorage.setItem('ag_specialist_notes_'+cid,notes);
+}
+
+function clearAIInsights(cid){
+  localStorage.removeItem('ag_ai_insights_'+cid);
+  document.getElementById('ai-insights-area').innerHTML='';
+  notify('Resposta IA removida.','info');
+}
+
+async function generateAIInsights(cid){
+  const key=getClaudeKey();
+  if(!key){notify('Configure a chave da API Claude primeiro.','error');return}
+
+  const btn=document.querySelector('#ai-insights-area')?.previousElementSibling?.querySelector('button');
+  const area=document.getElementById('ai-insights-area');
+  area.innerHTML=`<div class="ai-insight-card"><div class="ai-tag">🤖 Gerando análise...</div><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+
+  try {
+    const answers=getAnswers(cid);
+    const responses=getResponses(cid);
+    const indicators=getIndicators(cid);
+    const nr1risks=getNR1Risks(cid);
+    const actions=getActions(cid);
+    const clients=cid==='all'?getClients():[getClientById(cid)].filter(Boolean);
+    const notes=document.getElementById('ins-specialist-notes')?.value||'';
+
+    const dims=['comunicacao','lideranca','trabalho_equipe','reconhecimento','crescimento','bem_estar','saude_mental','burnout','felicidade'];
+    const dimSummary=dims.map(d=>{
+      const vals=answers.filter(a=>a.dimension===d&&a.numeric_value!=null).map(a=>a.numeric_value);
+      if(!vals.length) return null;
+      return `${d.replace(/_/g,' ')}: ${(vals.reduce((s,v)=>s+v,0)/vals.length).toFixed(1)}/10`;
+    }).filter(Boolean).join(', ');
+
+    const npsVals=answers.filter(a=>a.dimension==='nps'&&a.numeric_value!=null);
+    const prom=npsVals.filter(a=>a.numeric_value>=9).length;
+    const detr=npsVals.filter(a=>a.numeric_value<=6).length;
+    const enps=npsVals.length?Math.round((prom/npsVals.length-detr/npsVals.length)*100):'sem dados';
+
+    const lastInd=indicators.sort((a,b)=>a.month.localeCompare(b.month)).slice(-1)[0];
+    const indSummary=lastInd?`Absenteísmo: ${((lastInd.absenteeism_days/(lastInd.headcount*lastInd.working_days))*100).toFixed(1)}%, Turnover mensal: ${(((lastInd.turnover_exits+lastInd.admissions)/2/lastInd.headcount)*100).toFixed(1)}%`:'Sem dados de absenteísmo/turnover';
+    const riskSummary=nr1risks.map(r=>`${r.area} — "${r.factor}" (P:${r.probability}, S:${r.severity}, Score:${r.probability*r.severity})`).join('\n');
+    const actionSummary=actions.map(a=>`• ${a.title} [${a.priority}/${a.status}]`).join('\n');
+
+    const contextPrompt=`Você é um especialista sênior em People Analytics e RH estratégico da AG Consultoria.
+
+DADOS DA EMPRESA: ${clients.map(c=>c.name).join(', ')}
+
+SCORES POR DIMENSÃO: ${dimSummary||'Sem dados de dimensão'}
+
+eNPS: ${enps}
+Total de respostas: ${responses.length}
+
+INDICADORES OPERACIONAIS: ${indSummary}
+
+RISCOS PSICOSSOCIAIS NR-1:
+${riskSummary||'Nenhum risco cadastrado'}
+
+PLANOS DE AÇÃO EM ABERTO:
+${actionSummary||'Nenhum plano cadastrado'}
+
+ANÁLISE DO ESPECIALISTA HUMANO:
+${notes||'(Nenhuma nota adicional fornecida)'}
+
+Com base em todos esses dados, gere uma análise integrada e profissional com:
+1. Diagnóstico geral da saúde organizacional
+2. Principais pontos de atenção e urgências
+3. Correlações importantes entre os indicadores
+4. Recomendações estratégicas priorizadas
+5. Próximos passos concretos para o RH
+
+Seja direto, use dados quantitativos quando disponível, e escreva em português do Brasil.`;
+
+    const result=await callClaudeAPI([{role:'user',content:'Gere a análise integrada com base no contexto fornecido.'}],contextPrompt);
+    localStorage.setItem('ag_ai_insights_'+cid, result);
+    area.innerHTML=`<div class="ai-insight-card"><div class="ai-tag">🤖 Gerado por Claude · ${new Date().toLocaleString('pt-BR')}</div><h4>Análise Integrada — AG People Analytics</h4><p>${result}</p></div>`;
+    notify('Insights gerados com sucesso!','success');
+  } catch(e) {
+    area.innerHTML=`<div class="ai-insight-card" style="border-color:var(--danger)"><div class="ai-tag" style="color:var(--danger)">❌ Erro</div><p style="color:var(--danger)">${e.message}</p></div>`;
+    notify('Erro ao chamar API Claude: '+e.message,'error');
+  }
+}
+
+function generateInsights(cid,answers,responses){
+  const insights=[];
+  const dims=['comunicacao','lideranca','trabalho_equipe','reconhecimento','crescimento','bem_estar'];
+  const dimLabels={comunicacao:'Comunicação',lideranca:'Liderança',trabalho_equipe:'Trabalho em Equipe',reconhecimento:'Reconhecimento',crescimento:'Crescimento',bem_estar:'Bem-estar'};
+  dims.forEach(d=>{
+    const vals=answers.filter(a=>a.dimension===d&&a.numeric_value!=null).map(a=>a.numeric_value);
+    if(!vals.length) return;
+    const avg=vals.reduce((s,v)=>s+v,0)/vals.length;
+    if(avg>=8) insights.push({sentiment:'positive',title:`${dimLabels[d]} em destaque`,body:`Score ${avg.toFixed(1)}/10 — bem acima da média. Continue investindo nessa dimensão.`});
+    else if(avg<6) insights.push({sentiment:'negative',title:`Alerta em ${dimLabels[d]}`,body:`Score ${avg.toFixed(1)}/10 — atenção requerida. Mapeie causas raiz e crie plano de ação específico.`});
+  });
+  const hapVals=answers.filter(a=>a.dimension==='felicidade'&&a.numeric_value!=null);
+  if(hapVals.length){
+    const avg=hapVals.reduce((s,a)=>s+a.numeric_value,0)/hapVals.length;
+    const label=avg>=7?'positive':avg>=5?'neutral':'negative';
+    insights.push({sentiment:label,title:`Índice de Felicidade: ${avg.toFixed(1)}/10`,body:avg>=7?'Colaboradores demonstram satisfação elevada com o trabalho.':avg>=5?'Felicidade em zona de atenção — revise ambiente e reconhecimento.':'Felicidade crítica — ação imediata necessária para evitar turnover elevado.'});
+  }
+  const npsVals=answers.filter(a=>a.dimension==='nps'&&a.numeric_value!=null);
+  if(npsVals.length){
+    const prom=npsVals.filter(a=>a.numeric_value>=9).length;
+    const detr=npsVals.filter(a=>a.numeric_value<=6).length;
+    const enps=Math.round((prom/npsVals.length-detr/npsVals.length)*100);
+    if(enps<0) insights.push({sentiment:'negative',title:'eNPS negativo — zona crítica',body:`eNPS ${enps}: maioria não recomendaria a empresa. Priorize ações de engajamento.`});
+    else if(enps>=50) insights.push({sentiment:'positive',title:'eNPS excelente',body:`eNPS ${enps} — forte base de promotores internos. Documente boas práticas.`});
+    else insights.push({sentiment:'neutral',title:'eNPS neutro — zona de melhoria',body:`eNPS ${enps} — foque em converter neutros em promotores com reconhecimento e desenvolvimento.`});
+  }
+  const indicators=getIndicators(cid);
+  if(indicators.length){
+    const last=indicators.sort((a,b)=>a.month.localeCompare(b.month)).slice(-1)[0];
+    const abs=((last.absenteeism_days/(last.headcount*last.working_days))*100);
+    if(abs>4) insights.push({sentiment:'negative',title:`Absenteísmo alto: ${abs.toFixed(1)}%`,body:`Taxa acima do benchmark de 4%. Investigue causas: saúde, desmotivação ou conflitos.`});
+    else if(abs<=2) insights.push({sentiment:'positive',title:`Absenteísmo saudável: ${abs.toFixed(1)}%`,body:'Taxa dentro da faixa ideal. Sinal de ambiente saudável e engajamento.'});
+    const tv=(((last.turnover_exits+last.admissions)/2/last.headcount)*100);
+    if(tv>5) insights.push({sentiment:'negative',title:`Turnover elevado: ${tv.toFixed(1)}%/mês`,body:'Alto turnover impacta produtividade e custos de contratação. Priorize retenção.'});
+  }
+  const nr1=getNR1Risks(cid).filter(r=>r.probability*r.severity>=10);
+  if(nr1.length) insights.push({sentiment:'negative',title:`${nr1.length} risco(s) NR-1 de alta prioridade`,body:`Fatores: ${nr1.map(r=>r.factor).join('; ')}. Ação obrigatória conforme NR-1.`});
+  if(!insights.length) insights.push({sentiment:'neutral',title:'Continue coletando dados',body:'Com mais respostas, o sistema gerará insights mais precisos e acionáveis.'});
+  return insights;
+}
+
+// ══════════════════════════════════════════════════════════
+// INDICADORES DE RH
+// ══════════════════════════════════════════════════════════
+function renderIndicadores(cid){
+  const indicators=getIndicators(cid);
+  const answers=getAnswers(cid);
+  const isAdmin=state.role==='admin';
+
+  const hapVals=answers.filter(a=>a.dimension==='felicidade'&&a.numeric_value!=null).map(a=>a.numeric_value);
+  const happiness=hapVals.length?(hapVals.reduce((s,v)=>s+v,0)/hapVals.length).toFixed(1):null;
+  const hapColor=happiness?(happiness>=7?'var(--accent)':happiness>=5?'var(--orange)':'var(--danger)'):'var(--muted)';
+
+  const sorted=[...indicators].sort((a,b)=>a.month.localeCompare(b.month));
+  const last=sorted[sorted.length-1];
+  const prev=sorted[sorted.length-2];
+
+  const calcAbs=i=>i?((i.absenteeism_days/(i.headcount*i.working_days))*100).toFixed(1):null;
+  const calcTv=i=>i?(((i.turnover_exits+i.admissions)/2/i.headcount)*100).toFixed(1):null;
+  const abs=calcAbs(last); const prevAbs=calcAbs(prev);
+  const tv=calcTv(last);   const prevTv=calcTv(prev);
+  const rt=tv?(100-parseFloat(tv)).toFixed(1):null;
+
+  const trendTag=(cur,prv,goodWhenLow=false)=>{
+    if(!cur||!prv) return '';
+    const d=(parseFloat(cur)-parseFloat(prv)).toFixed(1);
+    const isGood=goodWhenLow?d<0:d>0;
+    const icon=d>0?'↑':d<0?'↓':'→';
+    return `<span class="trend-tag ${isGood?'trend-good':'trend-bad'}">${icon} ${Math.abs(d)}% vs mês ant.</span>`;
+  };
+
+  const annualExits=indicators.reduce((s,i)=>s+(i.turnover_exits||0),0);
+  const avgHC=indicators.length?indicators.reduce((s,i)=>s+(i.headcount||0),0)/indicators.length:0;
+  const annualTv=avgHC>0?((annualExits/avgHC)*100).toFixed(1):null;
+
+  return `
+<div class="section-header">
+  <h2>Indicadores de RH</h2>
+  ${isAdmin?`<button class="btn btn-primary" onclick="openModal('modal-indicator');populateClientSelects()">+ Lançar Indicadores</button>`:''}
+</div>
+
+<div class="ind-grid">
+  <div class="ind-card">
+    <div class="ind-label">Índice de Felicidade</div>
+    <div class="ind-val" style="color:${hapColor}">${happiness??'—'}</div>
+    <div class="ind-sub">${happiness?(happiness>=7?'😊 Colaboradores felizes':happiness>=5?'😐 Atenção necessária':'😟 Situação crítica'):'Sem dados de felicidade'}</div>
+    <div class="benchmark-bar"><span>0</span><div class="bbar"><div class="bfill" style="width:${happiness?happiness*10:0}%;background:${hapColor}"></div></div><span>10</span></div>
+  </div>
+  <div class="ind-card">
+    <div class="ind-label">Absenteísmo (mês atual)</div>
+    <div class="ind-val" style="color:${abs?(abs>4?'var(--danger)':abs>2?'var(--orange)':'var(--accent)'):'var(--muted)'}">${abs??'—'}<span style="font-size:18px">%</span></div>
+    ${trendTag(abs,prevAbs,true)}
+    <div class="ind-sub">${abs?(abs>4?'⚠️ Acima do benchmark (>4%)':abs>2?'📊 Moderado (2–4%)':'✅ Saudável (<2%)'):'Lance dados mensais'}</div>
+  </div>
+  <div class="ind-card">
+    <div class="ind-label">Turnover Mensal</div>
+    <div class="ind-val" style="color:${tv?(tv>5?'var(--danger)':tv>3?'var(--orange)':'var(--accent)'):'var(--muted)'}">${tv??'—'}<span style="font-size:18px">%</span></div>
+    ${trendTag(tv,prevTv,true)}
+    <div class="ind-sub">${annualTv?'Anual acumulado: '+annualTv+'%':tv?(tv>5?'Alto':'Controlado'):'Lance dados mensais'}</div>
+  </div>
+  <div class="ind-card">
+    <div class="ind-label">Taxa de Retenção</div>
+    <div class="ind-val" style="color:${rt?(rt>=97?'var(--accent)':rt>=92?'var(--primary)':rt>=88?'var(--orange)':'var(--danger)'):'var(--muted)'}">${rt??'—'}<span style="font-size:18px">%</span></div>
+    <div class="ind-sub">${rt?(rt>=95?'🏆 Excelente retenção':rt>=90?'Retenção adequada':'⚠️ Risco de perda de talentos'):'= 100% − turnover'}</div>
+    <div class="benchmark-bar"><span>0</span><div class="bbar"><div class="bfill" style="width:${rt?Math.min(rt,100):0}%;background:${rt?(rt>=97?'var(--accent)':rt>=88?'var(--orange)':'var(--danger)'):'var(--surface3)'}"></div></div><span>100%</span></div>
+  </div>
+</div>
+
+${indicators.length>=2?`
+<div class="charts-grid two" style="margin-bottom:24px">
+  <div class="chart-card"><div class="chart-title">Evolução do Absenteísmo (%)</div><div class="chart-wrap"><canvas id="chart-abs"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">Evolução do Turnover (%)</div><div class="chart-wrap"><canvas id="chart-tv"></canvas></div></div>
+</div>`:`<div style="background:rgba(54,98,255,.08);border:1px solid rgba(54,98,255,.2);border-radius:10px;padding:14px 18px;font-size:13px;color:var(--muted);margin-bottom:20px">📊 Lance pelo menos 2 meses de dados para visualizar a evolução dos indicadores.</div>`}
+
+<div class="section-header"><h2>Histórico de Indicadores</h2></div>
+${indicators.length?`<div class="table-wrap"><table>
+  <thead><tr><th>Empresa</th><th>Mês</th><th>HC</th><th>Dias úteis</th><th>Faltas</th><th>Absenteísmo</th><th>Saídas</th><th>Entradas</th><th>Turnover</th><th>Retenção</th></tr></thead>
+  <tbody>${[...indicators].sort((a,b)=>b.month.localeCompare(a.month)).map(i=>{
+    const client=getClientById(i.client_id);
+    const a=((i.absenteeism_days/(i.headcount*i.working_days))*100).toFixed(1);
+    const t=(((i.turnover_exits+i.admissions)/2/i.headcount)*100).toFixed(1);
+    const r=(100-parseFloat(t)).toFixed(1);
+    return `<tr>
+      <td><strong>${client?.name||'—'}</strong></td>
+      <td>${i.month}</td><td>${i.headcount}</td><td>${i.working_days}</td><td>${i.absenteeism_days}</td>
+      <td style="color:${a>4?'var(--danger)':a>2?'var(--orange)':'var(--accent)'};font-weight:600">${a}%</td>
+      <td>${i.turnover_exits}</td><td>${i.admissions}</td>
+      <td style="color:${t>5?'var(--danger)':t>3?'var(--orange)':'var(--accent)'};font-weight:600">${t}%</td>
+      <td style="color:${r<90?'var(--danger)':r<95?'var(--orange)':'var(--accent)'};font-weight:600">${r}%</td>
+    </tr>`;
+  }).join('')}</tbody>
+</table></div>`:
+`<div class="empty"><div class="empty-icon">📅</div><h3>Nenhum dado lançado</h3><p>Clique em "+ Lançar Indicadores" para inserir dados mensais.</p></div>`}`;
+}
+
+function initIndicadoresCharts(cid){
+  const indicators=[...getIndicators(cid)].sort((a,b)=>a.month.localeCompare(b.month));
+  if(indicators.length<2) return;
+  const labels=indicators.map(i=>i.month);
+  const absData=indicators.map(i=>((i.absenteeism_days/(i.headcount*i.working_days))*100).toFixed(2));
+  const tvData=indicators.map(i=>(((i.turnover_exits+i.admissions)/2/i.headcount)*100).toFixed(2));
+  const chartOpts=(color)=>({responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{color:'#8B9CC0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#8B9CC0'},grid:{display:false}}},plugins:{legend:{display:false}}});
+
+  destroyChart('chart-abs');
+  new Chart(document.getElementById('chart-abs'),{
+    type:'line',
+    data:{labels,datasets:[{label:'Absenteísmo',data:absData,borderColor:'#FF5C5C',backgroundColor:'rgba(255,92,92,.1)',fill:true,tension:.4,borderWidth:2,pointBackgroundColor:'#FF5C5C'}]},
+    options:chartOpts('#FF5C5C')
+  });
+  destroyChart('chart-tv');
+  new Chart(document.getElementById('chart-tv'),{
+    type:'line',
+    data:{labels,datasets:[{label:'Turnover',data:tvData,borderColor:'#FFBC7D',backgroundColor:'rgba(255,188,125,.1)',fill:true,tension:.4,borderWidth:2,pointBackgroundColor:'#FFBC7D'}]},
+    options:chartOpts('#FFBC7D')
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// MATRIZES DE RISCO (NR-1 + Geral)
+// ══════════════════════════════════════════════════════════
+function renderMatrizes(cid){
+  const risks=getNR1Risks(cid);
+  const isAdmin=state.role==='admin';
+
+  const PROB_LABELS=['','Raro','Improvável','Possível','Provável','Q. Certo'];
+  const SEV_LABELS=['','Insignif.','Menor','Moderado','Grave','Catastrófico'];
+  const riskClass=(p,s)=>{const sc=p*s;return sc>=17?'risk-critical':sc>=10?'risk-high':sc>=5?'risk-medium':'risk-low';};
+  const riskLabel=(p,s)=>{const sc=p*s;return sc>=17?'CRÍTICO':sc>=10?'ALTO':sc>=5?'MÉDIO':'BAIXO';};
+
+  // Build 5x5 grid (prob rows 5→1, sev cols 1→5)
+  let gridCells='';
+  // Header row: severity labels
+  gridCells+=`<div></div>`; // corner
+  for(let s=1;s<=5;s++) gridCells+=`<div class="matrix-label-cell" style="font-size:10px;font-weight:600;color:var(--muted)">${SEV_LABELS[s]}</div>`;
+  // Rows
+  for(let p=5;p>=1;p--){
+    gridCells+=`<div class="matrix-label-cell" style="writing-mode:vertical-rl;transform:rotate(180deg)">${PROB_LABELS[p]}</div>`;
+    for(let s=1;s<=5;s++){
+      const score=p*s;
+      const cls=riskClass(p,s);
+      const cellRisks=risks.filter(r=>r.probability==p&&r.severity==s);
+      const chips=cellRisks.map(r=>`<span class="risk-chip" title="${r.factor}">${r.factor.substring(0,12)}${r.factor.length>12?'…':''}</span>`).join('');
+      gridCells+=`<div class="matrix-cell ${cls}" title="P${p}×S${s} = ${score} — ${riskLabel(p,s)}">
+        <div style="font-weight:700;font-size:11px">${score}</div>
+        <div style="font-size:9px;opacity:.8">${riskLabel(p,s)}</div>
+        ${chips}
+      </div>`;
+    }
+  }
+
+  // Risks by area table
+  const areas=[...new Set(risks.map(r=>r.area))];
+  const areaRows=risks.sort((a,b)=>(b.probability*b.severity)-(a.probability*a.severity)).map(r=>{
+    const score=r.probability*r.severity;
+    const cls=riskClass(r.probability,r.severity);
+    const client=getClientById(r.client_id);
+    return `<tr>
+      <td><strong>${r.area}</strong></td>
+      <td>${r.factor}</td>
+      <td>${client?.name||'—'}</td>
+      <td style="text-align:center">${r.probability}</td>
+      <td style="text-align:center">${r.severity}</td>
+      <td style="text-align:center;font-weight:700;color:${score>=17?'var(--danger)':score>=10?'var(--orange)':score>=5?'var(--warn)':'var(--accent)'}">${score}</td>
+      <td><span class="badge ${score>=17?'badge-red':score>=10?'badge-orange':score>=5?'badge-orange':'badge-green'}">${riskLabel(r.probability,r.severity)}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${r.notes||'—'}</td>
+      ${isAdmin?`<td><button class="btn btn-sm" style="background:rgba(255,92,92,.12);color:var(--danger);border:none" onclick="deleteNR1Risk('${r.id}')">🗑</button></td>`:''}
+    </tr>`;
+  }).join('');
+
+  const counts={low:risks.filter(r=>r.probability*r.severity<5).length,med:risks.filter(r=>{const s=r.probability*r.severity;return s>=5&&s<10}).length,high:risks.filter(r=>{const s=r.probability*r.severity;return s>=10&&s<17}).length,crit:risks.filter(r=>r.probability*r.severity>=17).length};
+
+  return `
+<div class="section-header">
+  <h2>Matriz de Riscos Psicossociais (NR-1)</h2>
+  ${isAdmin?`<button class="btn btn-primary" onclick="openModal('modal-nr1risk');populateClientSelects()">+ Cadastrar Risco</button>`:''}
+</div>
+
+<!-- Summary KPIs -->
+<div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
+  <div class="kpi-card"><div class="kpi-icon">🟢</div><div class="kpi-label">Baixo Risco</div><div class="kpi-value" style="color:var(--accent)">${counts.low}</div><div class="kpi-sub">score 1–4</div></div>
+  <div class="kpi-card orange"><div class="kpi-icon">🟡</div><div class="kpi-label">Médio Risco</div><div class="kpi-value" style="color:var(--orange)">${counts.med}</div><div class="kpi-sub">score 5–9</div></div>
+  <div class="kpi-card orange"><div class="kpi-icon">🟠</div><div class="kpi-label">Alto Risco</div><div class="kpi-value" style="color:var(--orange)">${counts.high}</div><div class="kpi-sub">score 10–16</div></div>
+  <div class="kpi-card red"><div class="kpi-icon">🔴</div><div class="kpi-label">Risco Crítico</div><div class="kpi-value" style="color:var(--danger)">${counts.crit}</div><div class="kpi-sub">score 17–25</div></div>
+</div>
+
+<!-- Matrix -->
+<div class="chart-card" style="margin-bottom:24px">
+  <div class="chart-title">Matriz de Probabilidade × Severidade</div>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="text-align:center;font-size:11px;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg);font-weight:600;padding:8px">PROBABILIDADE →</div>
+    <div>
+      <div class="matrix-container">
+        <div class="matrix-table" style="grid-template-columns:60px repeat(5,86px)">
+          ${gridCells}
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--muted);font-weight:600;margin-top:8px">← SEVERIDADE →</div>
+      <div class="matrix-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(8,193,106,.4)"></div>Baixo (1–4)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,188,125,.4)"></div>Médio (5–9)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,92,92,.4)"></div>Alto (10–16)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(180,0,0,.5)"></div>Crítico (17–25)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail table -->
+<div class="section-header"><h2>Fatores de Risco Identificados</h2></div>
+${risks.length?`<div class="table-wrap"><table>
+  <thead><tr><th>Área NR-1</th><th>Fator de Risco</th><th>Empresa</th><th style="text-align:center">P</th><th style="text-align:center">S</th><th style="text-align:center">Score</th><th>Nível</th><th>Evidências</th>${isAdmin?'<th></th>':''}</tr></thead>
+  <tbody>${areaRows}</tbody>
+</table></div>`:
+`<div class="empty"><div class="empty-icon">🗂️</div><h3>Nenhum risco cadastrado</h3><p>Clique em "+ Cadastrar Risco" para mapear os fatores psicossociais da empresa.</p></div>`}`;
+}
+
+// ══════════════════════════════════════════════════════════
+// AGENTE IA (Chat com Claude)
+// ══════════════════════════════════════════════════════════
+let chatHistory=[];
+
+function renderAgente(cid){
+  const hasKey=!!getClaudeKey();
+  const clients=cid==='all'?getClients():[getClientById(cid)].filter(Boolean);
+  const ctxLabel=clients.map(c=>c.name).join(', ')||'Todas as empresas';
+  return `
+<div class="chat-ctx-bar">
+  🏢 Contexto atual: <strong>${ctxLabel}</strong> &nbsp;·&nbsp; O agente tem acesso a todos os dados de pesquisas, indicadores e riscos da seleção.
+  ${!hasKey?`<span style="margin-left:auto;color:var(--orange)">⚠️ API não configurada — <button class="btn btn-sm btn-secondary" onclick="openModal('modal-apikey');loadClaudeKeyInput()" style="font-size:11px">Configurar</button></span>`:''}
+</div>
+<div class="chat-wrap">
+  <div class="chat-messages" id="chat-msgs">
+    <div class="chat-bubble agent">
+      <div class="bubble-role">🤖 Agente AG People Analytics</div>
+      Olá! Sou o Agente IA da AG Consultoria especializado em People Analytics. Tenho acesso aos dados de pesquisas, indicadores de RH, riscos psicossociais e planos de ação da(s) empresa(s) selecionada(s).<br/><br/>
+      Como posso ajudar com sua análise de RH hoje? Você pode me perguntar sobre:<br/>
+      • Interpretação de resultados e scores<br/>
+      • Correlações entre indicadores<br/>
+      • Sugestões de planos de ação<br/>
+      • Compliance com NR-1<br/>
+      • Benchmarks e boas práticas
+    </div>
+  </div>
+  <div class="chat-input-row">
+    <textarea class="chat-textarea" id="chat-input" placeholder="Digite sua pergunta sobre os dados de RH..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAgentMessage()}"></textarea>
+    <button class="btn btn-primary" onclick="sendAgentMessage()" style="min-width:80px;height:44px">Enviar</button>
+  </div>
+</div>`;
+}
+
+function initAgente(cid){
+  chatHistory=[];
+  window._agentCid=cid;
+}
+
+function buildAgentContext(cid){
+  const clients=cid==='all'?getClients():[getClientById(cid)].filter(Boolean);
+  const answers=getAnswers(cid);
+  const responses=getResponses(cid);
+  const indicators=getIndicators(cid);
+  const nr1risks=getNR1Risks(cid);
+  const actions=getActions(cid);
+  const surveys=getSurveys(cid);
+
+  const dims=['comunicacao','lideranca','trabalho_equipe','reconhecimento','crescimento','bem_estar','saude_mental','burnout','felicidade','nps'];
+  const dimSummary=dims.map(d=>{
+    const vals=answers.filter(a=>a.dimension===d&&a.numeric_value!=null).map(a=>a.numeric_value);
+    if(!vals.length) return null;
+    return `  • ${d.replace(/_/g,' ')}: ${(vals.reduce((s,v)=>s+v,0)/vals.length).toFixed(2)}/10 (${vals.length} respostas)`;
+  }).filter(Boolean).join('\n');
+
+  const npsVals=answers.filter(a=>a.dimension==='nps'&&a.numeric_value!=null);
+  const prom=npsVals.filter(a=>a.numeric_value>=9).length;
+  const detr=npsVals.filter(a=>a.numeric_value<=6).length;
+  const enps=npsVals.length?Math.round((prom/npsVals.length-detr/npsVals.length)*100):'N/A';
+
+  const indRows=indicators.sort((a,b)=>b.month.localeCompare(a.month)).slice(0,6).map(i=>{
+    const abs=((i.absenteeism_days/(i.headcount*i.working_days))*100).toFixed(1);
+    const tv=(((i.turnover_exits+i.admissions)/2/i.headcount)*100).toFixed(1);
+    return `  • ${i.month}: Absenteísmo ${abs}%, Turnover ${tv}%, HC ${i.headcount}`;
+  }).join('\n');
+
+  const riskRows=nr1risks.sort((a,b)=>(b.probability*b.severity)-(a.probability*a.severity)).map(r=>`  • [${r.probability*r.severity}pts] ${r.area} — ${r.factor}`).join('\n');
+
+  const actionRows=actions.map(a=>`  • ${a.title} [${a.priority}/${a.status}] — ${a.area}`).join('\n');
+
+  return `Você é o Agente IA da AG Consultoria, especialista sênior em People Analytics, RH estratégico, saúde organizacional e conformidade com NR-1. Responda sempre em português do Brasil de forma profissional, precisa e acionável.
+
+EMPRESAS NO CONTEXTO: ${clients.map(c=>`${c.name} (${c.segment||'—'}, HC: ${c.headcount})`).join('; ')}
+
+PESQUISAS: ${surveys.length} pesquisa(s), ${responses.length} resposta(s) coletadas
+
+SCORES POR DIMENSÃO:
+${dimSummary||'  Sem dados de dimensão'}
+
+eNPS: ${enps} | Promotores: ${prom} | Detratores: ${detr} | Total NPS: ${npsVals.length}
+
+INDICADORES OPERACIONAIS (últimos 6 meses):
+${indRows||'  Sem dados de indicadores'}
+
+RISCOS PSICOSSOCIAIS NR-1 (ordenados por severidade):
+${riskRows||'  Nenhum risco cadastrado'}
+
+PLANOS DE AÇÃO:
+${actionRows||'  Nenhum plano cadastrado'}
+
+Use esses dados para responder as perguntas do usuário. Cite números quando relevante. Se algo não estiver nos dados, diga que não há informação suficiente e sugira como coletar.`;
+}
+
+async function sendAgentMessage(){
+  const input=document.getElementById('chat-input');
+  const msgs=document.getElementById('chat-msgs');
+  const text=input.value.trim();
+  if(!text) return;
+  if(!getClaudeKey()){
+    msgs.innerHTML+=`<div class="chat-bubble agent"><div class="bubble-role">🤖 Agente</div>Configure a chave da API Claude primeiro (botão ⚙️ Config. API no menu).</div>`;
+    msgs.scrollTop=msgs.scrollHeight;
+    return;
+  }
+  input.value='';
+  input.style.height='44px';
+
+  msgs.innerHTML+=`<div class="chat-bubble user">${escapeHtml(text)}</div>`;
+  msgs.innerHTML+=`<div class="chat-bubble agent" id="thinking-bubble"><div class="bubble-role">🤖 Agente</div><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  msgs.scrollTop=msgs.scrollHeight;
+
+  chatHistory.push({role:'user',content:text});
+
+  try {
+    const systemPrompt=buildAgentContext(window._agentCid||state.selectedCompany);
+    const reply=await callClaudeAPI([...chatHistory],systemPrompt);
+    chatHistory.push({role:'assistant',content:reply});
+    document.getElementById('thinking-bubble').outerHTML=`<div class="chat-bubble agent"><div class="bubble-role">🤖 Agente AG People Analytics</div>${reply.replace(/\n/g,'<br/>')}</div>`;
+    msgs.scrollTop=msgs.scrollHeight;
+  } catch(e){
+    document.getElementById('thinking-bubble').outerHTML=`<div class="chat-bubble agent" style="border-color:var(--danger)"><div class="bubble-role" style="color:var(--danger)">❌ Erro</div>${e.message}</div>`;
+  }
+}
+
+function escapeHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// ══════════════════════════════════════════════════════════
+// CLAUDE API
+// ══════════════════════════════════════════════════════════
+async function callClaudeAPI(messages,systemPrompt){
+  const key=getClaudeKey();
+  if(!key) throw new Error('Chave da API Claude não configurada.');
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':key,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:'claude-sonnet-4-6',
+      max_tokens:2048,
+      system:systemPrompt,
+      messages:messages.slice(-10)
+    })
+  });
+  if(!resp.ok){
+    const err=await resp.json().catch(()=>({}));
+    throw new Error(err.error?.message||`Erro HTTP ${resp.status}`);
+  }
+  const data=await resp.json();
+  return data.content[0].text;
+}
+
+function loadClaudeKeyInput(){
+  const el=document.getElementById('claude-key-input');
+  if(el) el.value=getClaudeKey();
+}
+
+function saveClaKeyModal(){
+  const key=document.getElementById('claude-key-input')?.value?.trim();
+  if(!key){notify('Cole a chave antes de salvar.','error');return}
+  setClaudeKey(key);
+  closeModal('modal-apikey');
+  notify('Chave API Claude salva!','success');
+  renderPage(state.currentPage);
+}
+
+// ══════════════════════════════════════════════════════════
+// INDICATOR MODAL SAVE
+// ══════════════════════════════════════════════════════════
+function saveIndicator(){
+  const clientId=document.getElementById('ind-client').value;
+  const month=document.getElementById('ind-month').value;
+  const hc=parseInt(document.getElementById('ind-hc').value)||0;
+  const days=parseInt(document.getElementById('ind-days').value)||0;
+  const abs=parseInt(document.getElementById('ind-abs').value)||0;
+  const exits=parseInt(document.getElementById('ind-exits').value)||0;
+  const admits=parseInt(document.getElementById('ind-admits').value)||0;
+  if(!clientId||!month||!hc||!days){notify('Preencha empresa, mês, HC e dias úteis.','error');return}
+  addItem('indicators',{id:uid(),client_id:clientId,month,headcount:hc,working_days:days,absenteeism_days:abs,turnover_exits:exits,admissions:admits});
+  closeModal('modal-indicator');
+  notify('Indicadores lançados!','success');
+  renderPage('indicadores');
+}
+
+// ══════════════════════════════════════════════════════════
+// NR-1 RISK MODAL SAVE
+// ══════════════════════════════════════════════════════════
+function saveNR1Risk(){
+  const clientId=document.getElementById('nr1-client').value;
+  const area=document.getElementById('nr1-area').value;
+  const factor=document.getElementById('nr1-factor').value.trim();
+  const probability=parseInt(document.getElementById('nr1-prob').value);
+  const severity=parseInt(document.getElementById('nr1-sev').value);
+  const notes=document.getElementById('nr1-notes').value.trim();
+  if(!clientId||!factor){notify('Preencha empresa e fator de risco.','error');return}
+  addItem('nr1risks',{id:uid(),client_id:clientId,area,factor,probability,severity,notes,created_at:new Date().toISOString()});
+  closeModal('modal-nr1risk');
+  notify('Risco NR-1 cadastrado!','success');
+  renderPage('matrizes');
+}
+
+function deleteNR1Risk(id){
+  setData('nr1risks',getData('nr1risks').filter(r=>r.id!==id));
+  notify('Risco removido.','info');
+  renderPage('matrizes');
+}
+
+// ══════════════════════════════════════════════════════════
+// CLIENTS (admin only)
+// ══════════════════════════════════════════════════════════
+function renderClients(){
+  const clients=getClients();
+  const planBadge={completo:'badge-green',intermediario:'badge-blue',basico:'badge-gray'};
+  const isAdmin=state.role==='admin';
+  return `
+  <div class="section-header">
+    <h2>Clientes (${clients.length})</h2>
+    ${isAdmin?`<button class="btn btn-danger btn-sm" onclick="confirmAction('Zerar todos os dados?','Isso apagará TODAS as respostas, pesquisas e colaboradores de todas as empresas. Os clientes serão mantidos.','resetAllData')">⚠️ Zerar Todos os Dados</button>`:''}
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Empresa</th><th>CNPJ</th><th>Segmento</th><th>HC</th><th>Plano</th><th>E-mail / Senha</th><th>Status</th><th>Ações</th></tr></thead>
+    <tbody>${clients.map(c=>`<tr>
+      <td><strong>${c.name}</strong><br/><span style="font-size:11px;color:var(--muted)">${c.contact_name||''}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${c.cnpj||'—'}</td>
+      <td>${c.segment||'—'}</td><td>${c.headcount||0}</td>
+      <td><span class="badge ${planBadge[c.plan]||'badge-gray'}">${c.plan}</span></td>
+      <td style="font-size:11px">${c.email}<br/><span style="color:var(--muted)">senha: ${c.password||'—'}</span></td>
+      <td><span class="badge ${c.status==='ativo'?'badge-green':'badge-red'}">${c.status||'ativo'}</span></td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-sm btn-secondary" onclick="viewCompany('${c.id}')">📊 Ver</button>
+        <button class="btn btn-sm btn-secondary" onclick="copyLink('${c.id}')">🔗</button>
+        ${isAdmin?`<button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.2)" onclick="confirmAction('Apagar cliente &quot;${c.name}&quot;?','Isso apagará o cliente e TODOS os seus dados (pesquisas, respostas, colaboradores, planos de ação). Esta ação não pode ser desfeita.','deleteClient','${c.id}')">🗑</button>`:''}
+      </td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function copyLink(clientId){
+  const surveys=getSurveys(clientId);
+  if(!surveys.length){notify('Nenhuma pesquisa ativa para este cliente.','error');return}
+  const active=surveys.find(s=>s.status==='ativa')||surveys[0];
+  const link=`${window.location.origin}/ag_rh_v2/responder.html?token=${active.public_token}`;
+  navigator.clipboard.writeText(link).then(()=>notify('Link copiado!','success'));
+}
+
+function viewCompany(id){
+  const s=document.getElementById('company-select');
+  s.value=id;
+  state.selectedCompany=id;
+  showPage('dashboard');
+}
+
+function deleteClient(id){
+  const clients=getClients().filter(c=>c.id!==id);
+  setData('clients',clients);
+  setData('surveys',getData('surveys').filter(s=>s.client_id!==id));
+  setData('collaborators',getData('collaborators').filter(c=>c.client_id!==id));
+  setData('responses',getData('responses').filter(r=>r.client_id!==id));
+  setData('answers',getData('answers').filter(a=>a.client_id!==id));
+  setData('actions',getData('actions').filter(a=>a.client_id!==id));
+  populateCompanySelect();
+  if(state.selectedCompany===id) state.selectedCompany='all';
+  notify('Cliente apagado com sucesso.','success');
+  renderPage('clients');
+}
+
+function resetAllData(){
+  ['surveys','collaborators','responses','answers','actions','survey_questions','indicators','nr1risks'].forEach(k=>setData(k,[]));
+  notify('Todos os dados foram zerados.','info');
+  renderPage('clients');
+}
+
+function deleteSurvey(id){
+  setData('surveys',getData('surveys').filter(s=>s.id!==id));
+  setData('survey_questions',getData('survey_questions').filter(q=>q.survey_id!==id));
+  setData('responses',getData('responses').filter(r=>r.survey_id!==id));
+  setData('answers',getData('answers').filter(a=>a.survey_id!==id));
+  notify('Pesquisa apagada.','success');
+  renderPage('surveys');
+}
+
+function changeSurveyStatus(id,status){
+  const survs=getData('surveys');
+  const idx=survs.findIndex(s=>s.id===id);
+  if(idx>=0){survs[idx].status=status;setData('surveys',survs)}
+  const labels={ativa:'Pesquisa ativada',concluida:'Pesquisa concluída',pausada:'Pesquisa pausada'};
+  notify(labels[status]||'Status atualizado.','success');
+  renderPage('surveys');
+}
+
+function confirmAction(title,msg,fn,arg=''){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  document.getElementById('confirm-ok').onclick=()=>{
+    closeModal('modal-confirm');
+    if(arg) window[fn](arg);
+    else window[fn]();
+  };
+  openModal('modal-confirm');
+}
+
+// ══════════════════════════════════════════════════════════
+// REPORTS
+// ══════════════════════════════════════════════════════════
+function renderReports(cid){
+  const surveys=getSurveys(cid);
+  const responses=getResponses(cid);
+  const clients=cid==='all'?getClients():[getClientById(cid)].filter(Boolean);
+  return `<div class="section-header"><h2>Relatórios</h2></div>
+  <div class="kpi-grid">
+    <div class="kpi-card blue"><div class="kpi-label">Total de Pesquisas</div><div class="kpi-value" style="color:var(--primary)">${surveys.length}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total de Respostas</div><div class="kpi-value" style="color:var(--accent)">${responses.length}</div></div>
+    <div class="kpi-card purple"><div class="kpi-label">Empresas Ativas</div><div class="kpi-value" style="color:var(--secondary)">${clients.length}</div></div>
+  </div>
+  <div class="table-wrap" style="margin-top:8px"><table>
+    <thead><tr><th>Empresa</th><th>Pesquisas</th><th>Respostas</th><th>Score Médio</th><th>eNPS</th></tr></thead>
+    <tbody>${clients.map(c=>{
+      const sv=getSurveys(c.id);
+      const rp=getResponses(c.id);
+      const an=getAnswers(c.id);
+      const avg=rp.length?(rp.reduce((s,r)=>s+(r.overall_score||0),0)/rp.length).toFixed(1):'-';
+      const nv=an.filter(a=>a.dimension==='nps'&&a.numeric_value!=null);
+      const pr=nv.filter(a=>a.numeric_value>=9).length;
+      const de=nv.filter(a=>a.numeric_value<=6).length;
+      const enps=nv.length?Math.round((pr/nv.length-de/nv.length)*100):'-';
+      return `<tr><td><strong>${c.name}</strong></td><td>${sv.length}</td><td>${rp.length}</td><td>${avg}</td><td>${enps}</td></tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// SURVEY MODAL
+// ══════════════════════════════════════════════════════════
+function populateClientSelects(){
+  const clients=getClients();
+  const ids=['s-client','c-client','a-client','ind-client','nr1-client'];
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.innerHTML=clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+    if(state.selectedCompany&&state.selectedCompany!=='all') el.value=state.selectedCompany;
+  });
+}
+
+function openNewSurveyModal(){
+  state.customQuestions=[];
+  document.getElementById('s-title').value='';
+  document.getElementById('s-desc').value='';
+  document.getElementById('s-deadline').value='';
+  document.getElementById('custom-questions-list').innerHTML='';
+  state.useStdQs=true;
+  document.getElementById('std-toggle').className='toggle-switch on';
+  populateClientSelects();
+  onSurveyTypeChange();
+  openModal('modal-survey');
+}
+
+function onSurveyTypeChange(){
+  updateQCount();
+}
+
+let stdQsOn=true;
+function toggleStdQs(){
+  stdQsOn=!stdQsOn;
+  document.getElementById('std-toggle').className='toggle-switch'+(stdQsOn?' on':'');
+  updateQCount();
+}
+
+function updateQCount(){
+  const type=document.getElementById('s-type').value;
+  const stdCount=stdQsOn?(STD_QUESTIONS[type]||[]).length:0;
+  const customCount=state.customQuestions.length;
+  document.getElementById('q-count-badge').textContent=`${stdCount+customCount} perguntas (${stdCount} padrão + ${customCount} custom)`;
+}
+
+function addCustomQuestion(){
+  const idx=state.customQuestions.length;
+  state.customQuestions.push({text:'',type:'likert',dimension:'',id:'cq-'+idx});
+  renderCustomQuestions();
+}
+
+function renderCustomQuestions(){
+  const dims=['comunicacao','lideranca','trabalho_equipe','reconhecimento','crescimento','bem_estar','saude_mental','burnout','nps','engajamento','felicidade','proposito','cultura','outro'];
+  const list=document.getElementById('custom-questions-list');
+  list.innerHTML=state.customQuestions.map((q,i)=>`
+    <div class="q-item" id="qitem-${i}">
+      <div class="q-item-head">
+        <div class="q-num">${i+1}</div>
+        <input type="text" placeholder="Texto da pergunta..." value="${q.text}" onchange="state.customQuestions[${i}].text=this.value;updateQCount()"/>
+        <button class="q-del" onclick="removeCustomQ(${i})">✕</button>
+      </div>
+      <div class="q-row">
+        <select onchange="state.customQuestions[${i}].type=this.value">
+          <option value="likert" ${q.type==='likert'?'selected':''}>Likert (1-10)</option>
+          <option value="nps" ${q.type==='nps'?'selected':''}>NPS (0-10)</option>
+          <option value="discursiva" ${q.type==='discursiva'?'selected':''}>Discursiva</option>
+          <option value="escolha" ${q.type==='escolha'?'selected':''}>Múltipla Escolha</option>
+        </select>
+        <select onchange="state.customQuestions[${i}].dimension=this.value">
+          <option value="">Selecione a dimensão...</option>
+          ${dims.map(d=>`<option value="${d}" ${q.dimension===d?'selected':''}>${d.replace(/_/g,' ')}</option>`).join('')}
+        </select>
+      </div>
+    </div>`).join('');
+  updateQCount();
+}
+
+function removeCustomQ(i){
+  state.customQuestions.splice(i,1);
+  renderCustomQuestions();
+}
+
+function saveSurvey(){
+  const title=document.getElementById('s-title').value.trim();
+  const clientId=document.getElementById('s-client').value;
+  const type=document.getElementById('s-type').value;
+  const period=document.getElementById('s-period').value;
+  const deadline=document.getElementById('s-deadline').value;
+  const desc=document.getElementById('s-desc').value.trim();
+  if(!title||!clientId){notify('Preencha título e empresa.','error');return}
+
+  const token='tok-'+uid();
+  const surveyId=uid();
+  const survey={id:surveyId,client_id:clientId,title,type,period,status:'ativa',total_invited:0,public_token:token,deadline,description:desc,created_at:new Date().toISOString()};
+  addItem('surveys',survey);
+
+  // Save standard questions
+  const questions=getData('survey_questions');
+  let qOrder=0;
+  if(stdQsOn){
+    (STD_QUESTIONS[type]||[]).forEach(q=>{
+      questions.push({id:uid(),survey_id:surveyId,client_id:clientId,...q,order_num:qOrder++,is_custom:false,weight:1});
+    });
+  }
+  state.customQuestions.forEach(q=>{
+    if(q.text) questions.push({id:uid(),survey_id:surveyId,client_id:clientId,...q,order_num:qOrder++,is_custom:true,weight:1});
+  });
+  setData('survey_questions',questions);
+
+  closeModal('modal-survey');
+  state.customQuestions=[];
+  notify(`Pesquisa "${title}" criada!`, 'success');
+  renderPage('surveys');
+}
+
+// ══════════════════════════════════════════════════════════
+// COLLABORATOR MODAL
+// ══════════════════════════════════════════════════════════
+function saveCollab(){
+  const name=document.getElementById('c-name').value.trim();
+  const clientId=document.getElementById('c-client').value;
+  if(!name||!clientId){notify('Preencha nome e empresa.','error');return}
+  addItem('collaborators',{
+    id:uid(),client_id:clientId,name,
+    email:document.getElementById('c-email').value,
+    role:document.getElementById('c-role').value,
+    department:document.getElementById('c-dept').value,
+    regime:document.getElementById('c-regime').value,
+    salary:parseFloat(document.getElementById('c-salary').value)||0,
+    admission_date:document.getElementById('c-admission').value,
+    status:'ativo'
+  });
+  closeModal('modal-collab');
+  notify(`Colaborador "${name}" adicionado!`,'success');
+  renderPage('collaborators');
+}
+
+// ══════════════════════════════════════════════════════════
+// ACTION PLAN MODAL
+// ══════════════════════════════════════════════════════════
+function saveAction(){
+  const title=document.getElementById('a-title').value.trim();
+  const clientId=document.getElementById('a-client').value;
+  if(!title||!clientId){notify('Preencha título e empresa.','error');return}
+  addItem('actions',{
+    id:uid(),client_id:clientId,title,
+    area:document.getElementById('a-area').value,
+    priority:document.getElementById('a-priority').value,
+    responsible:document.getElementById('a-resp').value,
+    deadline:document.getElementById('a-deadline').value,
+    status:document.getElementById('a-status').value,
+    description:document.getElementById('a-desc').value,
+    created_at:new Date().toISOString()
+  });
+  closeModal('modal-action');
+  notify(`Plano "${title}" criado!`,'success');
+  renderPage('actions');
+}
+
+// ══════════════════════════════════════════════════════════
+// CLIENT MODAL
+// ══════════════════════════════════════════════════════════
+function saveClient(){
+  const name=document.getElementById('cl-name').value.trim();
+  const email=document.getElementById('cl-email').value.trim();
+  const pass=document.getElementById('cl-pass').value;
+  if(!name||!email||!pass){notify('Preencha nome, e-mail e senha.','error');return}
+  const id=uid();
+  addItem('clients',{
+    id,name,email,password:pass,
+    cnpj:document.getElementById('cl-cnpj').value,
+    segment:document.getElementById('cl-segment').value,
+    headcount:parseInt(document.getElementById('cl-hc').value)||0,
+    contact_name:document.getElementById('cl-contact').value,
+    plan:document.getElementById('cl-plan').value,
+    status:'ativo',created_at:new Date().toISOString()
+  });
+  populateCompanySelect();
+  closeModal('modal-client');
+  notify(`Cliente "${name}" cadastrado!`,'success');
+  renderPage('clients');
+}
+
+// ══════════════════════════════════════════════════════════
+// MODAL HELPERS
+// ══════════════════════════════════════════════════════════
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal-backdrop').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('open')});
+});
+
+// ══════════════════════════════════════════════════════════
+// NOTIFICATION
+// ══════════════════════════════════════════════════════════
+function notify(msg,type='info'){
+  const el=document.getElementById('notif');
+  el.textContent=msg;
+  el.className='notif show '+type;
+  setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// ══════════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════════
+if(!sessionStorage.getItem('ag_role')){
+  window.location.href='index.html';
+} else {
+  init();
+}
+</script>
+</body>
+</html>
