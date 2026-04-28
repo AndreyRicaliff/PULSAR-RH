@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="config.js"></script>
+<script src="questions.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -733,6 +734,16 @@ function initSeedData(){
     {id:'a-27',survey_id:'survey-4',client_id:'client-3',dimension:'felicidade',numeric_value:8.4},
   );
 
+  // Seed survey_questions para os surveys demo (usando STD_QUESTIONS de questions.js)
+  const surveyQuestions=[];
+  let qOrder=0;
+  surveys.forEach(s=>{
+    qOrder=0;
+    (STD_QUESTIONS[s.type]||STD_QUESTIONS.clima).forEach(q=>{
+      surveyQuestions.push({id:'sq-'+s.id+'-'+qOrder,survey_id:s.id,client_id:s.client_id,...q,order_num:qOrder++,is_custom:false,weight:1});
+    });
+  });
+
   localStorage.setItem('ag_clients', JSON.stringify(clients));
   localStorage.setItem('ag_surveys', JSON.stringify(surveys));
   localStorage.setItem('ag_collaborators', JSON.stringify(collabs));
@@ -741,6 +752,7 @@ function initSeedData(){
   localStorage.setItem('ag_actions', JSON.stringify(actions));
   localStorage.setItem('ag_indicators', JSON.stringify(indicators));
   localStorage.setItem('ag_nr1risks', JSON.stringify(nr1risks));
+  localStorage.setItem('ag_survey_questions', JSON.stringify(surveyQuestions));
   localStorage.setItem('ag_initialized', '1');
 }
 
@@ -1165,7 +1177,8 @@ function initPeopleCharts(cid){
 // ══════════════════════════════════════════════════════════
 // SURVEYS
 // ══════════════════════════════════════════════════════════
-const SURVEY_TYPE_LABELS={clima:'Clima Organizacional',engajamento:'Engajamento',360:'Avaliação 360°',180:'Avaliação 180°',lideranca:'Liderança',felicidade:'Felicidade',nr1:'NR-1',onboarding:'Onboarding',desligamento:'Desligamento',saude:'Saúde'};
+// TYPE_LABELS vem de questions.js (fonte única)
+const SURVEY_TYPE_LABELS = TYPE_LABELS;
 
 function renderSurveys(cid){
   const surveys=getSurveys(cid);
@@ -1259,53 +1272,8 @@ function openResults(surveyId){
 
 // ══════════════════════════════════════════════════════════
 // BANK OF QUESTIONS
+// STD_QUESTIONS e TYPE_LABELS vêm de questions.js (fonte única).
 // ══════════════════════════════════════════════════════════
-const STD_QUESTIONS={
-  clima:[
-    {text:'Como você avalia a comunicação interna da empresa?',type:'likert',dimension:'comunicacao'},
-    {text:'Seu gestor imediato reconhece suas contribuições?',type:'likert',dimension:'reconhecimento'},
-    {text:'Você se sente parte do time e dos resultados?',type:'likert',dimension:'trabalho_equipe'},
-    {text:'A empresa oferece condições adequadas para seu desenvolvimento?',type:'likert',dimension:'crescimento'},
-    {text:'Como você avalia o ambiente e bem-estar no trabalho?',type:'likert',dimension:'bem_estar'},
-    {text:'Você recomendaria a empresa como ótimo lugar para trabalhar? (0-10)',type:'nps',dimension:'nps'},
-  ],
-  engajamento:[
-    {text:'Você recomendaria a empresa como lugar para trabalhar? (0-10)',type:'nps',dimension:'nps'},
-    {text:'Quão engajado você se sente com os objetivos da empresa?',type:'likert',dimension:'engajamento'},
-    {text:'Você sente que seu trabalho tem propósito e impacto?',type:'likert',dimension:'proposito'},
-  ],
-  nr1:[
-    {text:'Como você avalia seu nível atual de estresse no trabalho?',type:'likert',dimension:'saude_mental'},
-    {text:'Você consegue equilibrar vida pessoal e profissional?',type:'likert',dimension:'equilibrio'},
-    {text:'Sente que tem suporte da empresa em momentos difíceis?',type:'likert',dimension:'suporte'},
-    {text:'Nos últimos 30 dias, sentiu sintomas de esgotamento (burnout)?',type:'likert',dimension:'burnout'},
-  ],
-  felicidade:[
-    {text:'Você está feliz com seu trabalho atualmente?',type:'likert',dimension:'felicidade'},
-    {text:'Seu trabalho está alinhado com seus valores pessoais?',type:'likert',dimension:'proposito'},
-    {text:'Você se sente valorizado pela empresa?',type:'likert',dimension:'reconhecimento'},
-  ],
-  360:[
-    {text:'O colaborador avaliado demonstra liderança positiva?',type:'likert',dimension:'lideranca'},
-    {text:'Ele/ela comunica bem e de forma clara?',type:'likert',dimension:'comunicacao'},
-    {text:'Colabora bem com a equipe?',type:'likert',dimension:'trabalho_equipe'},
-  ],
-  lideranca:[
-    {text:'Seu líder comunica a visão e metas com clareza?',type:'likert',dimension:'lideranca'},
-    {text:'Ele/ela dá feedback construtivo regularmente?',type:'likert',dimension:'feedback'},
-    {text:'Você confia nas decisões do seu gestor?',type:'likert',dimension:'confianca'},
-  ],
-  onboarding:[
-    {text:'O processo de integração foi bem estruturado?',type:'likert',dimension:'onboarding'},
-    {text:'Você recebeu as informações necessárias para iniciar?',type:'likert',dimension:'onboarding'},
-    {text:'Você recomendaria a empresa para amigos? (0-10)',type:'nps',dimension:'nps'},
-  ],
-  desligamento:[
-    {text:'Por que você está deixando a empresa?',type:'discursiva',dimension:'motivo'},
-    {text:'A empresa tratou você com respeito durante sua jornada?',type:'likert',dimension:'cultura'},
-    {text:'Você recomendaria a empresa como empregador? (0-10)',type:'nps',dimension:'nps'},
-  ],
-};
 
 function renderQuestions(){
   const types=Object.keys(STD_QUESTIONS);

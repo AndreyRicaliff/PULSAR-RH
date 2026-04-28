@@ -6,6 +6,7 @@
 <title>Pesquisa — AG People Analytics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="questions.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -233,71 +234,7 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:
 
 <script>
 // ══ DATA ══
-const STD_QUESTIONS={
-  clima:[
-    {id:'c1',text:'Como você avalia a comunicação interna da empresa?',type:'likert',dimension:'Comunicação',sub:'Pense na clareza das informações, canais disponíveis e transparência da liderança.'},
-    {id:'c2',text:'Você se sente reconhecido(a) pelo seu trabalho e conquistas?',type:'likert',dimension:'Reconhecimento',sub:'Considere elogios, feedbacks positivos e valorização do seu esforço.'},
-    {id:'c3',text:'Como é o ambiente de colaboração e trabalho em equipe?',type:'likert',dimension:'Equipe',sub:'Pense na cooperação, confiança e sinergia com seus colegas.'},
-    {id:'c4',text:'A empresa investe no seu crescimento e desenvolvimento profissional?',type:'likert',dimension:'Crescimento',sub:'Treinamentos, mentorias, plano de carreira e oportunidades de evolução.'},
-    {id:'c5',text:'Como você avalia seu bem-estar e qualidade de vida no trabalho?',type:'likert',dimension:'Bem-estar',sub:'Considere equilíbrio entre vida pessoal e profissional, saúde e ambiente físico.'},
-    {id:'c6',text:'Em uma escala de 0 a 10, o quanto você recomendaria esta empresa como um ótimo lugar para trabalhar?',type:'nps',dimension:'eNPS',sub:'0 = jamais recomendaria · 10 = recomendaria com certeza e entusiasmo'},
-  ],
-  engajamento:[
-    {id:'e1',text:'O quanto você se sente engajado(a) com a missão e objetivos da empresa?',type:'likert',dimension:'Engajamento',sub:'Pense em como seus valores se alinham com os da organização.'},
-    {id:'e2',text:'Você sente que seu trabalho tem propósito e gera impacto real?',type:'likert',dimension:'Propósito',sub:'Considere como suas atividades contribuem para um objetivo maior.'},
-    {id:'e3',text:'A liderança te inspira e motiva a dar o seu melhor?',type:'likert',dimension:'Liderança',sub:'Pense em como seu gestor ou diretoria influencia sua motivação diária.'},
-    {id:'e4',text:'Em uma escala de 0 a 10, o quanto você recomendaria esta empresa como lugar para trabalhar?',type:'nps',dimension:'eNPS',sub:'0 = jamais · 10 = com total entusiasmo'},
-  ],
-  360:[
-    {id:'360-1',text:'O colaborador avaliado demonstra liderança positiva e inspiradora?',type:'likert',dimension:'Liderança',sub:'Considere sua capacidade de influenciar e motivar as pessoas ao redor.'},
-    {id:'360-2',text:'A comunicação dele/dela é clara, objetiva e respeitosa?',type:'likert',dimension:'Comunicação',sub:'Pense em reuniões, e-mails, conversas e clareza nas solicitações.'},
-    {id:'360-3',text:'Ele/ela colabora ativamente com a equipe e busca soluções conjuntas?',type:'likert',dimension:'Equipe',sub:'Avalie a disposição para ajudar, compartilhar e trabalhar junto.'},
-    {id:'360-4',text:'Age com ética, transparência e integridade em suas decisões?',type:'likert',dimension:'Ética',sub:'Pense em situações onde valores e princípios foram colocados à prova.'},
-    {id:'360-5',text:'Busca constantemente aprender, melhorar e se desenvolver?',type:'likert',dimension:'Crescimento',sub:'Avalie a abertura para feedback e disposição para evoluir.'},
-  ],
-  '180':[
-    {id:'180-1',text:'Seu gestor oferece feedback claro, construtivo e regular?',type:'likert',dimension:'Feedback',sub:'Pense na qualidade e frequência dos retornos que você recebe.'},
-    {id:'180-2',text:'Você recebe suporte e recursos adequados para atingir suas metas?',type:'likert',dimension:'Suporte',sub:'Considere ferramentas, informações e apoio disponíveis.'},
-    {id:'180-3',text:'Seu gestor reconhece suas conquistas e valoriza seu esforço?',type:'likert',dimension:'Reconhecimento',sub:'Pense em situações em que você se sentiu valorizado pelo seu líder.'},
-  ],
-  lideranca:[
-    {id:'l1',text:'Seu líder comunica a visão, metas e expectativas com clareza?',type:'likert',dimension:'Visão',sub:'Você sabe para onde a equipe está indo e qual é o seu papel nisso?'},
-    {id:'l2',text:'Você confia nas decisões e no julgamento do seu gestor?',type:'likert',dimension:'Confiança',sub:'Pense em situações difíceis e como as decisões foram tomadas.'},
-    {id:'l3',text:'Seu líder incentiva o desenvolvimento e crescimento da equipe?',type:'likert',dimension:'Desenvolvimento',sub:'Ele/ela investe no potencial das pessoas ao seu redor?'},
-    {id:'l4',text:'O quanto este líder te inspira a dar o seu melhor todos os dias?',type:'nps',dimension:'Inspiração',sub:'0 = não me inspira · 10 = me inspira completamente'},
-  ],
-  felicidade:[
-    {id:'f1',text:'De modo geral, como está sua felicidade no trabalho hoje?',type:'likert',dimension:'Felicidade',sub:'Seja honesto(a) — não existe resposta certa ou errada.'},
-    {id:'f2',text:'Seu trabalho está alinhado com seus valores e propósito pessoal?',type:'likert',dimension:'Propósito',sub:'Você sente que o que faz tem significado para você?'},
-    {id:'f3',text:'Você se sente genuinamente valorizado(a) como pessoa, não apenas como profissional?',type:'likert',dimension:'Valor',sub:'A empresa reconhece quem você é além das suas entregas?'},
-    {id:'f4',text:'O que mais contribui para a sua felicidade aqui?',type:'escolha',dimension:'Drivers',sub:'Escolha o fator mais importante para você.',options:['Colegas e trabalho em equipe','Reconhecimento e valorização','Desafios e crescimento','Liderança inspiradora','Flexibilidade e equilíbrio de vida','Propósito e impacto do trabalho']},
-  ],
-  nr1:[
-    {id:'n1',text:'Como você avalia seu nível de estresse no trabalho atualmente?',type:'likert',dimension:'Estresse',sub:'1 = muito baixo (ótimo) · 10 = extremamente alto (preocupante)'},
-    {id:'n2',text:'Você consegue equilibrar a vida profissional com a pessoal?',type:'likert',dimension:'Equilíbrio',sub:'Pense em tempo para família, hobbies, descanso e autocuidado.'},
-    {id:'n3',text:'Você se sente apoiado(a) pela empresa em momentos de dificuldade?',type:'likert',dimension:'Suporte',sub:'Há recursos, pessoas ou políticas que te ajudam quando você precisa?'},
-    {id:'n4',text:'Nos últimos 30 dias, sentiu sintomas de cansaço extremo ou esgotamento?',type:'escolha',dimension:'Burnout',sub:'Seja honesto(a) — essa informação é fundamental para ações de cuidado.',options:['Não senti nenhum sintoma','Senti levemente, mas passou','Sinto regularmente e me preocupa','Estou me sentindo esgotado(a) agora']},
-    {id:'n5',text:'A empresa promove ações concretas de saúde mental e bem-estar?',type:'likert',dimension:'Saúde Mental',sub:'Palestras, apoio psicológico, programas de bem-estar, políticas flexíveis.'},
-  ],
-  onboarding:[
-    {id:'o1',text:'O processo de integração foi bem planejado e te preparou para a função?',type:'likert',dimension:'Integração',sub:'Você recebeu as informações, treinamentos e suporte necessários?'},
-    {id:'o2',text:'A equipe e a liderança te acolheram e fizeram você se sentir bem-vindo(a)?',type:'likert',dimension:'Acolhimento',sub:'Pense nos primeiros dias e semanas na empresa.'},
-    {id:'o3',text:'O que mais poderia ter tornado sua chegada ainda melhor?',type:'escolha',dimension:'Melhoria',sub:'Escolha o principal ponto a ser melhorado.',options:['Mais treinamentos técnicos','Melhor apresentação da cultura','Buddy / mentor nos primeiros dias','Mais clareza sobre a função','Integração social com o time','Suporte do RH foi excelente']},
-    {id:'o4',text:'Com base na sua experiência até aqui, o quanto você recomendaria esta empresa? (0 a 10)',type:'nps',dimension:'eNPS',sub:'0 = não recomendaria · 10 = recomendaria com toda certeza'},
-  ],
-  desligamento:[
-    {id:'d1',text:'Qual o principal motivo da sua saída da empresa?',type:'escolha',dimension:'Motivo',sub:'Seja sincero(a) — isso nos ajuda a melhorar para os próximos.',options:['Nova oportunidade de crescimento','Remuneração abaixo do mercado','Ambiente ou cultura organizacional','Relacionamento com a gestão','Mudança de área / carreira','Questões pessoais']},
-    {id:'d2',text:'Você foi tratado(a) com respeito e dignidade durante toda a sua jornada aqui?',type:'likert',dimension:'Respeito',sub:'Considere a cultura, liderança e colegas ao longo do tempo.'},
-    {id:'d3',text:'O que a empresa poderia ter feito diferente para te manter?',type:'discursiva',dimension:'Melhoria',sub:'Sua resposta pode mudar a trajetória de quem vem depois de você.'},
-    {id:'d4',text:'Você recomendaria esta empresa como empregador para alguém de confiança? (0–10)',type:'nps',dimension:'eNPS',sub:'0 = jamais · 10 = com total confiança'},
-  ],
-  saude:[
-    {id:'s1',text:'Como você avalia sua saúde geral atualmente?',type:'likert',dimension:'Saúde',sub:'Considere saúde física, mental e emocional de forma integrada.'},
-    {id:'s2',text:'A empresa oferece condições físicas e ergonômicas adequadas para o trabalho?',type:'likert',dimension:'Ergonomia',sub:'Equipamentos, cadeiras, iluminação, temperatura, espaço.'},
-    {id:'s3',text:'Você faz pausas e se desconecta adequadamente durante o dia?',type:'escolha',dimension:'Pausas',sub:'Pausas regulares são essenciais para produtividade e saúde.',options:['Sim, com regularidade e sem culpa','Às vezes, quando dá tempo','Raramente — sinto pressão para não pausar','Não consigo me desconectar']},
-  ],
-};
-const TYPE_LABELS={clima:'Clima Organizacional',engajamento:'Engajamento / eNPS','360':'Avaliação 360°','180':'Avaliação 180°',lideranca:'Liderança',felicidade:'Felicidade no Trabalho',nr1:'NR-1 / Saúde Mental',onboarding:'Onboarding',desligamento:'Desligamento',saude:'Saúde Geral'};
+// STD_QUESTIONS, TYPE_LABELS e normalizeDim vêm de questions.js
 
 const ENCOURAGEMENTS_BY_SCORE={
   high:['🔥 Ótimo! Seus pontos fortes ficam registrados.','✨ Que alegria! Isso faz diferença para todos.','💚 Excelente! Continue assim.','🌟 Incrível resposta! Obrigado pela honestidade.'],
@@ -315,8 +252,8 @@ const token=getParam('token');
 function getSurveyByToken(tok){
   try{const all=JSON.parse(localStorage.getItem('ag_surveys')||'[]');return all.find(s=>s.public_token===tok)||null}catch(e){return null}
 }
-function getCustomQuestions(sid){
-  try{const all=JSON.parse(localStorage.getItem('ag_survey_questions')||'[]');return all.filter(q=>q.survey_id===sid)}catch(e){return[]}
+function getStoredQuestions(sid){
+  try{const all=JSON.parse(localStorage.getItem('ag_survey_questions')||'[]');return all.filter(q=>q.survey_id===sid).sort((a,b)=>(a.order_num||0)-(b.order_num||0))}catch(e){return[]}
 }
 
 // ══ INIT ══
@@ -341,9 +278,11 @@ function init(){
       showError();return;
     }
   }
-  const stdQs=STD_QUESTIONS[survey.type]||STD_QUESTIONS.clima;
-  const customQs=getCustomQuestions(survey.id);
-  questions=[...stdQs,...customQs];
+  // Se admin já criou perguntas para essa pesquisa, usar somente elas
+  // (já incluem as std + custom, gravadas no momento da criação).
+  // Senão, fallback para o banco padrão por tipo.
+  const stored=getStoredQuestions(survey.id);
+  questions = stored.length ? stored : (STD_QUESTIONS[survey.type]||STD_QUESTIONS.clima);
   document.getElementById('meta-type').textContent='📋 '+(TYPE_LABELS[survey.type]||survey.type);
   document.getElementById('meta-qcount').textContent=questions.length;
   document.getElementById('meta-time').textContent='⏱ ~'+Math.ceil(questions.length*0.5)+' min';
@@ -468,24 +407,7 @@ function prevQuestion(){
   setTimeout(()=>{qIndex--;renderQuestion();old.style.opacity='1';old.style.transform='translateY(0)'},250);
 }
 
-// ══ DIMENSION NORMALIZATION ══
-const DIM_MAP={
-  'Comunicação':'comunicacao','Reconhecimento':'reconhecimento','Equipe':'trabalho_equipe',
-  'Crescimento':'crescimento','Bem-estar':'bem_estar','eNPS':'nps','NPS':'nps',
-  'Engajamento':'engajamento','Propósito':'proposito','Liderança':'lideranca',
-  'Estresse':'saude_mental','Equilíbrio':'equilibrio','Suporte':'suporte',
-  'Burnout':'burnout','Saúde Mental':'saude_mental','Felicidade':'felicidade',
-  'Valor':'valor','Drivers':'drivers','Feedback':'feedback','Confiança':'confianca',
-  'Desenvolvimento':'desenvolvimento','Inspiração':'nps','Ética':'etica',
-  'Visão':'visao','Integração':'onboarding','Acolhimento':'acolhimento',
-  'Melhoria':'melhoria','Motivo':'motivo','Respeito':'respeito',
-  'Saúde':'saude','Ergonomia':'ergonomia','Pausas':'pausas',
-};
-function normalizeDim(d){
-  if(!d) return null;
-  if(DIM_MAP[d]) return DIM_MAP[d];
-  return d.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'_');
-}
+// normalizeDim vem de questions.js (fonte única).
 
 // ══ SUBMIT ══
 function submitForm(){
