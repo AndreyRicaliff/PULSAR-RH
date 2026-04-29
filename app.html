@@ -22,9 +22,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 
 /* ── SIDEBAR ── */
 .sidebar{width:240px;min-width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0}
-.sidebar-logo{padding:20px 20px 12px;border-bottom:1px solid var(--border)}
-.sidebar-logo span{font-size:17px;font-weight:700;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.sidebar-logo small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.sidebar-logo{padding:20px 20px 14px;border-bottom:1px solid var(--border)}
+.sidebar-logo span{font-size:17px;font-weight:800;letter-spacing:.5px;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:logoBreathe 2.4s ease-in-out infinite}
+.sidebar-ekg{display:block;margin:5px 0 6px;height:18px;width:100px;opacity:.7}
+.sidebar-ekg path{fill:none;stroke:url(#sideGrad);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:130;stroke-dashoffset:130;animation:ekgDraw 2.4s ease-in-out infinite}
+.sidebar-made{font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:1px}
+.sidebar-logo small{display:block;color:var(--muted);font-size:10px;margin-top:0;opacity:.7}
+@keyframes logoBreathe{0%,100%{opacity:1;filter:drop-shadow(0 0 0 rgba(54,98,255,0))}50%{opacity:.8;filter:drop-shadow(0 0 8px rgba(54,98,255,.3))}}
+@keyframes ekgDraw{0%{stroke-dashoffset:130;opacity:1}65%{stroke-dashoffset:0;opacity:1}85%{stroke-dashoffset:0;opacity:.4}100%{stroke-dashoffset:0;opacity:0}}
 .nav{flex:1;padding:12px 0;overflow-y:auto}
 .nav-section{padding:6px 14px 4px;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;border-radius:0;color:var(--muted);font-size:13px;font-weight:500;transition:.15s;border-left:3px solid transparent;margin:1px 0}
@@ -255,7 +260,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <span>Pulsar RH</span>
+    <span>PULSAR RH</span>
+    <svg class="sidebar-ekg" viewBox="0 0 100 18">
+      <defs>
+        <linearGradient id="sideGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#3662FF" stop-opacity="0"/>
+          <stop offset="45%" stop-color="#3662FF" stop-opacity="1"/>
+          <stop offset="65%" stop-color="#A55EFF" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#A55EFF" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="M0,9 L18,9 L24,6 L28,9 L31,2 L34,16 L37,9 L48,9 L52,5 L56,9 L100,9"/>
+    </svg>
+    <em class="sidebar-made">Feito por AG CONSULTORIA</em>
     <small>Muito além da contabilidade</small>
   </div>
   <nav class="nav">
