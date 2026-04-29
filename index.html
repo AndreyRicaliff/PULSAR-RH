@@ -132,22 +132,19 @@ input:focus{border-color:var(--primary)}
     <!-- FORMULÁRIO CLIENTE -->
     <div id="form-client" style="display:none">
       <div id="client-input">
-        <div class="client-hint" id="client-hint-magic">
-          <strong>Acesso simples.</strong> Digite seu e-mail e enviaremos um link de acesso direto. Sem senha para lembrar.
-        </div>
-        <div class="client-hint" id="client-hint-offline" style="display:none">
-          <strong>Modo de teste.</strong> Use as credenciais de acesso fornecidas pela AG Consultoria.
+        <div class="client-hint">
+          <strong id="client-hint-text">Acesso simples.</strong> <span id="client-hint-sub">Digite seu e-mail e enviaremos um link de acesso direto. Sem senha para lembrar.</span>
         </div>
         <div class="form-group">
           <label>E-mail</label>
           <input id="client-email" type="email" placeholder="rh@suaempresa.com" onkeydown="if(event.key==='Enter')sendMagicLink()"/>
         </div>
-        <div class="form-group" id="client-pass-group" style="display:none">
+        <div class="form-group" id="client-pass-group">
           <label>Senha</label>
           <input id="client-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')sendMagicLink()"/>
         </div>
         <button class="btn" id="btn-magic" onclick="sendMagicLink()">
-          <span>Receber link de acesso</span>
+          <span id="btn-magic-label">Entrar</span>
         </button>
       </div>
 
@@ -192,12 +189,19 @@ function setTab(t){
   });
   document.getElementById('form-admin').style.display = t==='admin' ? '' : 'none';
   document.getElementById('form-client').style.display = t==='client' ? '' : 'none';
-  // modo offline: mostra campo senha no tab cliente
-  if(t==='client' && OFFLINE_MODE){
-    document.getElementById('client-pass-group').style.display='';
-    document.getElementById('client-hint-magic').style.display='none';
-    document.getElementById('client-hint-offline').style.display='';
-    document.getElementById('btn-magic').querySelector('span').textContent='Entrar';
+  if(t==='client'){
+    const offline = (typeof OFFLINE_MODE !== 'undefined') && OFFLINE_MODE;
+    const passGroup = document.getElementById('client-pass-group');
+    const btnLabel  = document.getElementById('btn-magic-label');
+    if(offline){
+      passGroup.style.display = '';
+      btnLabel.textContent = 'Entrar';
+      document.getElementById('client-hint-text').textContent = 'Modo de teste.';
+      document.getElementById('client-hint-sub').textContent = 'Use as credenciais fornecidas pela AG Consultoria.';
+    } else {
+      passGroup.style.display = 'none';
+      btnLabel.textContent = 'Receber link de acesso';
+    }
   }
   hideErr();
 }

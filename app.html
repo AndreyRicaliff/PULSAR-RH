@@ -16,8 +16,8 @@
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
   --primary:#3662FF;--secondary:#5E7FFF;--accent:#08C16A;
-  --bg:#0E121A;--surface:#1B1F27;--surface2:#252B38;--surface3:#2E3444;
-  --border:#2E3444;--text:#F0F2FF;--muted:#8B9CC0;--orange:#FFBC7D;
+  --bg:#0A0F1A;--surface:#0F1829;--surface2:#182236;--surface3:#1E2D47;
+  --border:#1A2D47;--text:#E8EEFF;--muted:#7A9BC4;--orange:#FFBC7D;
   --danger:#FF5C5C;--warn:#FFBC7D;
 }
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow:hidden}
@@ -1147,7 +1147,7 @@ function initDashboardCharts(cid){
   destroyChart('chart-company');
   new Chart(document.getElementById('chart-company'),{
     type:'bar',
-    data:{labels:compLabels,datasets:[{label:'Score Médio',data:compData,backgroundColor:['#3662FF','#5E7FFF','#08C16A','#FFBC7D'],borderRadius:6}]},
+    data:{labels:compLabels,datasets:[{label:'Score Médio',data:compData,backgroundColor:['#3662FF','#A55EFF','#08C16A','#FFBC7D'],borderRadius:6}]},
     options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:10,ticks:{color:'#8B9CC0'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#8B9CC0'},grid:{display:false}}},plugins:{legend:{display:false}}}
   });
 }
@@ -1221,7 +1221,7 @@ function initPeopleCharts(cid){
   destroyChart('pa-radar');
   new Chart(document.getElementById('pa-radar'),{
     type:'radar',
-    data:{labels:presentDims.map(d=>dimLabels[d]||d),datasets:[{label:'Média',data:radarData,backgroundColor:'rgba(165,94,255,.2)',borderColor:'#5E7FFF',borderWidth:2,pointBackgroundColor:'#5E7FFF'}]},
+    data:{labels:presentDims.map(d=>dimLabels[d]||d),datasets:[{label:'Média',data:radarData,backgroundColor:'rgba(165,94,255,.2)',borderColor:'#A55EFF',borderWidth:2,pointBackgroundColor:'#A55EFF'}]},
     options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:10,ticks:{color:'#8B9CC0',backdropColor:'transparent',stepSize:2},grid:{color:'rgba(255,255,255,.05)'},pointLabels:{color:'#8B9CC0',font:{size:10}}}},plugins:{legend:{display:false}}}
   });
 
@@ -1241,7 +1241,7 @@ function initPeopleCharts(cid){
   destroyChart('pa-dept');
   new Chart(document.getElementById('pa-dept'),{
     type:'bar',
-    data:{labels:depts,datasets:[{label:'Colaboradores',data:deptCounts,backgroundColor:['#3662FF','#5E7FFF','#08C16A','#FFBC7D','#FF5C5C'],borderRadius:6}]},
+    data:{labels:depts,datasets:[{label:'Colaboradores',data:deptCounts,backgroundColor:['#3662FF','#A55EFF','#08C16A','#FFBC7D','#FF5C5C'],borderRadius:6}]},
     options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{ticks:{color:'#8B9CC0'},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#8B9CC0'},grid:{display:false}}},plugins:{legend:{display:false}}}
   });
 }
