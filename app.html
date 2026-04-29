@@ -40,9 +40,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .nav-item .icon{font-size:16px;width:20px;text-align:center}
 .sidebar-footer{padding:14px 16px 10px;border-top:1px solid var(--border)}
 .sidebar-madeby{margin-top:10px;padding-top:8px;border-top:1px solid var(--border);text-align:center}
-.sidebar-madeby span{font-size:9px;color:var(--muted);opacity:.5;letter-spacing:.6px;text-transform:uppercase}
-.sidebar-madeby strong{font-weight:600;opacity:.8}
-.sidebar-madeby small{display:block;font-size:8px;color:var(--muted);opacity:.35;margin-top:1px;letter-spacing:.3px}
+.sidebar-madeby span{font-size:9px;color:var(--muted);opacity:.6;letter-spacing:.6px;text-transform:uppercase}
+.sidebar-madeby small{display:block;font-size:8px;background:linear-gradient(90deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:500;margin-top:2px;letter-spacing:.3px}
 .user-pill{display:flex;align-items:center;gap:8px;font-size:12px}
 .avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;color:#fff}
 .user-pill .meta{flex:1;overflow:hidden}
@@ -315,7 +314,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <button class="logout-btn" onclick="doLogout()" title="Sair">⏻</button>
     </div>
     <div class="sidebar-madeby">
-      <img src="/ag-logo.png" alt="AG Consultoria" style="height:16px;opacity:.4;filter:brightness(0) invert(1);display:block;margin:0 auto 3px"/>
+      <img src="/ag-logo.png" alt="AG Consultoria" style="height:18px;opacity:.75;filter:brightness(0) invert(1);display:block;margin:0 auto 4px"/>
       <small>Muito além da contabilidade</small>
     </div>
   </div>
@@ -2373,13 +2372,14 @@ function openProfileModal(){
   if(isAdmin){
     area.innerHTML=`
       <img src="/favicon.svg" style="width:80px;height:80px;border-radius:20px;box-shadow:0 6px 24px rgba(54,98,255,.45);margin-bottom:8px"/>
-      <div style="font-size:11px;color:var(--muted);letter-spacing:.5px">AG CONSULTORIA</div>`;
+      <div style="font-size:11px;font-weight:600;background:linear-gradient(90deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:1px;margin-top:2px">AG CONSULTORIA</div>
+      <div style="font-size:10px;color:var(--muted);letter-spacing:.3px;margin-top:2px">Muito além da contabilidade</div>`;
   } else {
     const ini=state.user.charAt(0).toUpperCase();
     area.innerHTML=`<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:inline-flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff;margin-bottom:8px">${ini}</div>`;
   }
   document.getElementById('profile-name').value=state.user;
-  document.getElementById('profile-role-display').value=isAdmin?'Administrador — Consultoria AG':'Empresa Cliente';
+  document.getElementById('profile-role-display').value=isAdmin?'Administrador — AG Consultoria':'Empresa Cliente';
   openModal('modal-profile');
 }
 

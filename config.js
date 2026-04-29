@@ -22,9 +22,13 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const OFFLINE_MODE = SUPABASE_URL.includes('SEU_PROJECT');
 
 // ── ADMINISTRADOR ─────────────────────────────────────────
-// Em produção, substitua por autenticação via Supabase Auth
-const ADMIN_EMAIL    = 'suporte@agconsultorialtda.com';
-const ADMIN_PASSWORD = '2610Ali93#$';
+// ADMIN_EMAIL: usado para identificar o papel de admin após login no Supabase
+// A senha real é gerenciada exclusivamente no Supabase Auth (nunca aqui)
+const ADMIN_EMAIL = 'suporte@agconsultorialtda.com';
+
+// Credenciais apenas para modo DEMO offline (sem Supabase)
+const DEMO_ADMIN_EMAIL    = 'admin@demo.pulsar';
+const DEMO_ADMIN_PASSWORD = 'demo123';
 
 // ── CONFIGURAÇÕES GERAIS ──────────────────────────────────
 const APP_VERSION = '2.0.0';

@@ -227,8 +227,8 @@ async function doLogin(){
     if(error){showErr('Credenciais inválidas.');return}
     window.location.href = '/app';
   } else {
-    // Offline: verifica credenciais locais
-    if(email===ADMIN_EMAIL && pass===ADMIN_PASSWORD){
+    // Offline: verifica credenciais locais (demo)
+    if(email===DEMO_ADMIN_EMAIL && pass===DEMO_ADMIN_PASSWORD){
       sessionStorage.setItem('ag_role','admin');
       sessionStorage.setItem('ag_user','AG Consultoria');
       window.location.href = '/app';
@@ -260,7 +260,7 @@ async function sendMagicLink(){
     // Offline: email + senha
     const pass = document.getElementById('client-pass').value;
     // Admin usando tab cliente → acessa como cliente-1 para testes
-    if(email===ADMIN_EMAIL && pass===ADMIN_PASSWORD){
+    if(email===DEMO_ADMIN_EMAIL && pass===DEMO_ADMIN_PASSWORD){
       const stored = JSON.parse(localStorage.getItem('ag_clients')||'[]');
       const c = stored[0] || {id:'client-1',name:'Tech Solutions Ltda'};
       sessionStorage.setItem('ag_role','client');
