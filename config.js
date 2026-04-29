@@ -23,8 +23,8 @@ const OFFLINE_MODE = SUPABASE_URL.includes('SEU_PROJECT');
 
 // ── ADMINISTRADOR ─────────────────────────────────────────
 // Em produção, substitua por autenticação via Supabase Auth
-const ADMIN_EMAIL    = 'admin@agconsultoria.com';
-const ADMIN_PASSWORD = '123456';
+const ADMIN_EMAIL    = 'suporte@agconsultorialtda.com';
+const ADMIN_PASSWORD = '2610Ali93#$';
 
 // ── CONFIGURAÇÕES GERAIS ──────────────────────────────────
 const APP_VERSION = '2.0.0';
