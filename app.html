@@ -480,10 +480,11 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 </div>
 
-<!-- New Client Modal -->
+<!-- New / Edit Client Modal -->
 <div class="modal-backdrop" id="modal-client">
   <div class="modal">
-    <h2>🏢 Novo Cliente</h2>
+    <h2 id="modal-client-title">🏢 Novo Cliente</h2>
+    <input type="hidden" id="cl-edit-id"/>
     <div class="form-row">
       <div class="form-group"><label>Empresa</label><input id="cl-name" placeholder="Razão social"/></div>
       <div class="form-group"><label>CNPJ</label><input id="cl-cnpj" placeholder="00.000.000/0001-00"/></div>
@@ -494,16 +495,28 @@ tr:hover td{background:rgba(255,255,255,.02)}
     </div>
     <div class="form-row">
       <div class="form-group"><label>E-mail de Acesso</label><input id="cl-email" type="email" placeholder="rh@empresa.com"/></div>
-      <div class="form-group"><label>Senha</label><input id="cl-pass" type="password" placeholder="senha123"/></div>
+      <div class="form-group"><label>Contato RH</label><input id="cl-contact" placeholder="Nome do responsável"/></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Contato RH</label><input id="cl-contact" placeholder="Nome do responsável"/></div>
       <div class="form-group">
         <label>Plano</label>
         <select id="cl-plan">
           <option value="basico">Básico</option><option value="intermediario">Intermediário</option><option value="completo" selected>Completo</option>
         </select>
       </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="cl-status">
+          <option value="ativo">Ativo</option><option value="inativo">Inativo</option>
+        </select>
+      </div>
+    </div>
+    <div id="cl-invite-row" style="background:rgba(54,98,255,.06);border:1px solid rgba(54,98,255,.2);border-radius:10px;padding:12px 14px;margin-bottom:4px;display:flex;align-items:center;gap:10px">
+      <input type="checkbox" id="cl-invite" checked style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;flex-shrink:0"/>
+      <label for="cl-invite" style="font-size:13px;color:var(--text);cursor:pointer;margin:0;text-transform:none;letter-spacing:0;font-weight:400">
+        Enviar convite de acesso por e-mail imediatamente
+        <span style="display:block;font-size:11px;color:var(--muted);margin-top:2px">O cliente receberá um link de login válido por 1 hora</span>
+      </label>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-client')">Cancelar</button>
@@ -842,7 +855,7 @@ function init(){
   if(savedName) state.user=savedName;
 
   document.getElementById('user-name').textContent=state.user;
-  document.getElementById('user-role').textContent=role==='admin'?'Consultoria AG':'Empresa Cliente';
+  document.getElementById('user-role').textContent=role==='admin'?'AG Consultoria':'Empresa Cliente';
 
   // Avatar: logo candy para admin, iniciais para cliente
   const av=document.getElementById('av');
@@ -857,9 +870,12 @@ function init(){
     document.getElementById('admin-only').style.display='block';
   } else {
     document.getElementById('company-select').style.display='none';
+    document.getElementById('topbar-action').style.display='none';
     state.selectedCompany=state.clientId||'all';
     // Oculta seções irrelevantes para cliente
-    document.querySelectorAll('.nav-item[onclick*="questions"]').forEach(el=>el.style.display='none');
+    ['questions','matrizes','reports'].forEach(p=>{
+      document.querySelectorAll(`.nav-item[onclick*="${p}"]`).forEach(el=>el.style.display='none');
+    });
   }
   populateCompanySelect();
   if(state.clientId) state.selectedCompany=state.clientId;
@@ -906,7 +922,7 @@ const TOPBAR_ACTIONS={
 };
 const TOPBAR_FNS={
   surveys:'openNewSurveyModal()',collaborators:"openModal('modal-collab');populateClientSelects()",
-  actions:"openModal('modal-action');populateClientSelects()",clients:"openModal('modal-client')",
+  actions:"openModal('modal-action');populateClientSelects()",clients:"openNewClientModal()",
   indicadores:"openModal('modal-indicator');populateClientSelects()",
   matrizes:"openModal('modal-nr1risk');populateClientSelects()",
   agente:"openModal('modal-apikey');loadClaudeKeyInput()",
@@ -2016,28 +2032,37 @@ function deleteNR1Risk(id){
 function renderClients(){
   const clients=getClients();
   const planBadge={completo:'badge-green',intermediario:'badge-blue',basico:'badge-gray'};
+  const planLabel={completo:'Completo',intermediario:'Intermediário',basico:'Básico'};
   const isAdmin=state.role==='admin';
+  if(!isAdmin) return '<div class="empty"><div class="empty-icon">🔒</div><h3>Acesso restrito</h3><p>Esta área é exclusiva do administrador.</p></div>';
   return `
   <div class="section-header">
     <h2>Clientes (${clients.length})</h2>
-    ${isAdmin?`<button class="btn btn-danger btn-sm" onclick="confirmAction('Zerar todos os dados?','Isso apagará TODAS as respostas, pesquisas e colaboradores de todas as empresas. Os clientes serão mantidos.','resetAllData')">⚠️ Zerar Todos os Dados</button>`:''}
+    <button class="btn btn-danger btn-sm" onclick="confirmAction('Zerar todos os dados?','Isso apagará TODAS as respostas, pesquisas e colaboradores de todas as empresas. Os clientes serão mantidos.','resetAllData')">⚠️ Zerar Dados</button>
   </div>
   <div class="table-wrap"><table>
-    <thead><tr><th>Empresa</th><th>CNPJ</th><th>Segmento</th><th>HC</th><th>Plano</th><th>E-mail de acesso</th><th>Status</th><th>Ações</th></tr></thead>
-    <tbody>${clients.map(c=>`<tr>
-      <td><strong>${c.name}</strong><br/><span style="font-size:11px;color:var(--muted)">${c.contact_name||''}</span></td>
+    <thead><tr><th>Empresa</th><th>CNPJ</th><th>Segmento</th><th>HC</th><th>Contato RH</th><th>Plano</th><th>E-mail</th><th>Status</th><th>Ações</th></tr></thead>
+    <tbody>${clients.length?clients.map(c=>`<tr>
+      <td><strong>${c.name}</strong></td>
       <td style="font-size:12px;color:var(--muted)">${c.cnpj||'—'}</td>
-      <td>${c.segment||'—'}</td><td>${c.headcount||0}</td>
-      <td><span class="badge ${planBadge[c.plan]||'badge-gray'}">${c.plan}</span></td>
-      <td style="font-size:11px">${c.email}</td>
-      <td><span class="badge ${c.status==='ativo'?'badge-green':'badge-red'}">${c.status||'ativo'}</span></td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn btn-sm btn-secondary" onclick="viewCompany('${c.id}')">📊 Ver</button>
-        <button class="btn btn-sm btn-primary" onclick="sendClientAccess('${c.id}')" title="Enviar link de acesso por e-mail">✉️ Enviar acesso</button>
-        <button class="btn btn-sm btn-secondary" onclick="copyLink('${c.id}')">🔗</button>
-        ${isAdmin?`<button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.2)" onclick="confirmAction('Apagar cliente &quot;${c.name}&quot;?','Isso apagará o cliente e TODOS os seus dados (pesquisas, respostas, colaboradores, planos de ação). Esta ação não pode ser desfeita.','deleteClient','${c.id}')">🗑</button>`:''}
+      <td style="font-size:12px">${c.segment||'—'}</td>
+      <td>${c.headcount||0}</td>
+      <td style="font-size:12px;color:var(--muted)">${c.contact_name||'—'}</td>
+      <td><span class="badge ${planBadge[c.plan]||'badge-gray'}">${planLabel[c.plan]||c.plan}</span></td>
+      <td style="font-size:12px">${c.email}</td>
+      <td>
+        <span class="badge ${(c.status||'ativo')==='ativo'?'badge-green':'badge-red'}" style="cursor:pointer" onclick="toggleClientStatus('${c.id}')" title="Clique para alternar status">${(c.status||'ativo')==='ativo'?'Ativo':'Inativo'}</span>
       </td>
-    </tr>`).join('')}</tbody>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-sm btn-secondary" onclick="viewCompany('${c.id}')" title="Ver dashboard deste cliente">📊</button>
+        <button class="btn btn-sm btn-secondary" onclick="openEditClientModal('${c.id}')" title="Editar dados do cliente">✏️</button>
+        <button class="btn btn-sm btn-primary" onclick="sendClientAccess('${c.id}')" title="Enviar link de acesso por e-mail">✉️ Acesso</button>
+        <button class="btn btn-sm btn-secondary" onclick="copySurveyLink('${c.id}')" title="Copiar link da pesquisa ativa">🔗 Pesquisa</button>
+        <button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.2)" onclick="confirmAction('Apagar cliente &quot;${c.name}&quot;?','Isso apagará o cliente e TODOS os seus dados (pesquisas, respostas, colaboradores, planos de ação). Esta ação não pode ser desfeita.','deleteClient','${c.id}')" title="Apagar cliente">🗑</button>
+      </td>
+    </tr>`).join(''):
+    '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">Nenhum cliente cadastrado. Clique em "+ Novo Cliente" para começar.</td></tr>'}
+    </tbody>
   </table></div>`;
 }
 
@@ -2065,12 +2090,12 @@ async function sendClientAccess(clientId){
   }
 }
 
-function copyLink(clientId){
+function copySurveyLink(clientId){
   const surveys=getSurveys(clientId);
-  if(!surveys.length){notify('Nenhuma pesquisa ativa para este cliente.','error');return}
-  const active=surveys.find(s=>s.status==='ativa')||surveys[0];
+  const active=surveys.find(s=>s.status==='ativa');
+  if(!active){notify('Nenhuma pesquisa ativa para este cliente.','error');return}
   const link=`${window.location.origin}/responder?token=${active.public_token}`;
-  navigator.clipboard.writeText(link).then(()=>notify('Link copiado!','success'));
+  navigator.clipboard.writeText(link).then(()=>notify('Link da pesquisa copiado!','success'));
 }
 
 function viewCompany(id){
@@ -2320,24 +2345,80 @@ function saveAction(){
 // ══════════════════════════════════════════════════════════
 // CLIENT MODAL
 // ══════════════════════════════════════════════════════════
+function openNewClientModal(){
+  document.getElementById('cl-edit-id').value='';
+  document.getElementById('cl-name').value='';
+  document.getElementById('cl-cnpj').value='';
+  document.getElementById('cl-segment').value='';
+  document.getElementById('cl-hc').value='';
+  document.getElementById('cl-email').value='';
+  document.getElementById('cl-contact').value='';
+  document.getElementById('cl-plan').value='completo';
+  document.getElementById('cl-status').value='ativo';
+  document.getElementById('cl-invite').checked=true;
+  document.getElementById('cl-invite-row').style.display='flex';
+  document.getElementById('modal-client-title').textContent='🏢 Novo Cliente';
+  openModal('modal-client');
+}
+
+function openEditClientModal(id){
+  const c=getClientById(id);
+  if(!c) return;
+  document.getElementById('cl-edit-id').value=id;
+  document.getElementById('cl-name').value=c.name||'';
+  document.getElementById('cl-cnpj').value=c.cnpj||'';
+  document.getElementById('cl-segment').value=c.segment||'';
+  document.getElementById('cl-hc').value=c.headcount||'';
+  document.getElementById('cl-email').value=c.email||'';
+  document.getElementById('cl-contact').value=c.contact_name||'';
+  document.getElementById('cl-plan').value=c.plan||'completo';
+  document.getElementById('cl-status').value=c.status||'ativo';
+  document.getElementById('cl-invite-row').style.display='none';
+  document.getElementById('modal-client-title').textContent='✏️ Editar Cliente';
+  openModal('modal-client');
+}
+
 function saveClient(){
   const name=document.getElementById('cl-name').value.trim();
-  const email=document.getElementById('cl-email').value.trim();
-  const pass=document.getElementById('cl-pass').value;
-  if(!name||!email||!pass){notify('Preencha nome, e-mail e senha.','error');return}
-  const id=uid();
-  addItem('clients',{
-    id,name,email,password:pass,
-    cnpj:document.getElementById('cl-cnpj').value,
-    segment:document.getElementById('cl-segment').value,
+  const email=document.getElementById('cl-email').value.trim().toLowerCase();
+  if(!name||!email){notify('Preencha nome e e-mail do cliente.','error');return}
+
+  const editId=document.getElementById('cl-edit-id').value;
+  const obj={
+    name,email,
+    cnpj:document.getElementById('cl-cnpj').value.trim(),
+    segment:document.getElementById('cl-segment').value.trim(),
     headcount:parseInt(document.getElementById('cl-hc').value)||0,
-    contact_name:document.getElementById('cl-contact').value,
+    contact_name:document.getElementById('cl-contact').value.trim(),
     plan:document.getElementById('cl-plan').value,
-    status:'ativo',created_at:new Date().toISOString()
-  });
-  populateCompanySelect();
-  closeModal('modal-client');
-  notify(`Cliente "${name}" cadastrado!`,'success');
+    status:document.getElementById('cl-status').value,
+  };
+
+  if(editId){
+    const all=getData('clients');
+    const idx=all.findIndex(c=>c.id===editId);
+    if(idx>=0){ all[idx]={...all[idx],...obj}; setData('clients',all); }
+    populateCompanySelect();
+    closeModal('modal-client');
+    notify(`Cliente "${name}" atualizado!`,'success');
+  } else {
+    const id=uid();
+    addItem('clients',{id,...obj,created_at:new Date().toISOString()});
+    const sendInvite=document.getElementById('cl-invite').checked;
+    populateCompanySelect();
+    closeModal('modal-client');
+    notify(`Cliente "${name}" cadastrado!`,'success');
+    if(sendInvite) sendClientAccess(id);
+  }
+  renderPage('clients');
+}
+
+function toggleClientStatus(id){
+  const all=getData('clients');
+  const idx=all.findIndex(c=>c.id===id);
+  if(idx<0) return;
+  all[idx].status=all[idx].status==='ativo'?'inativo':'ativo';
+  setData('clients',all);
   renderPage('clients');
 }
 
