@@ -13,7 +13,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --primary:#3662FF;--secondary:#A55EFF;--accent:#08C16A;
+  --primary:#3662FF;--secondary:#5E7FFF;--accent:#08C16A;
   --bg:#0E121A;--surface:#1B1F27;--surface2:#252B38;
   --border:#2E3444;--text:#F0F2FF;--muted:#8B9CC0;
 }
@@ -97,8 +97,8 @@ input:focus{border-color:var(--primary)}
           <linearGradient id="ekgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%"   stop-color="#3662FF" stop-opacity="0"/>
             <stop offset="35%"  stop-color="#3662FF" stop-opacity="1"/>
-            <stop offset="65%"  stop-color="#A55EFF" stop-opacity="1"/>
-            <stop offset="100%" stop-color="#A55EFF" stop-opacity="0"/>
+            <stop offset="65%"  stop-color="#5E7FFF" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#5E7FFF" stop-opacity="0"/>
           </linearGradient>
         </defs>
         <polyline class="ekg-path" points="0,16 22,16 32,12 38,16 43,3 49,29 54,16 72,16 79,9 86,16 160,16"/>
@@ -132,12 +132,19 @@ input:focus{border-color:var(--primary)}
     <!-- FORMULÁRIO CLIENTE -->
     <div id="form-client" style="display:none">
       <div id="client-input">
-        <div class="client-hint">
+        <div class="client-hint" id="client-hint-magic">
           <strong>Acesso simples.</strong> Digite seu e-mail e enviaremos um link de acesso direto. Sem senha para lembrar.
+        </div>
+        <div class="client-hint" id="client-hint-offline" style="display:none">
+          <strong>Modo de teste.</strong> Use as credenciais de acesso fornecidas pela AG Consultoria.
         </div>
         <div class="form-group">
           <label>E-mail</label>
           <input id="client-email" type="email" placeholder="rh@suaempresa.com" onkeydown="if(event.key==='Enter')sendMagicLink()"/>
+        </div>
+        <div class="form-group" id="client-pass-group" style="display:none">
+          <label>Senha</label>
+          <input id="client-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')sendMagicLink()"/>
         </div>
         <button class="btn" id="btn-magic" onclick="sendMagicLink()">
           <span>Receber link de acesso</span>
@@ -185,6 +192,13 @@ function setTab(t){
   });
   document.getElementById('form-admin').style.display = t==='admin' ? '' : 'none';
   document.getElementById('form-client').style.display = t==='client' ? '' : 'none';
+  // modo offline: mostra campo senha no tab cliente
+  if(t==='client' && OFFLINE_MODE){
+    document.getElementById('client-pass-group').style.display='';
+    document.getElementById('client-hint-magic').style.display='none';
+    document.getElementById('client-hint-offline').style.display='';
+    document.getElementById('btn-magic').querySelector('span').textContent='Entrar';
+  }
   hideErr();
 }
 
@@ -239,12 +253,23 @@ async function sendMagicLink(){
     btn.querySelector('span').textContent = 'Receber link de acesso';
     if(error){showErr('Erro ao enviar. Verifique o e-mail e tente novamente.');return}
   } else {
-    // Offline: simula login de cliente direto
+    // Offline: email + senha
+    const pass = document.getElementById('client-pass').value;
+    // Admin usando tab cliente → acessa como cliente-1 para testes
+    if(email===ADMIN_EMAIL && pass===ADMIN_PASSWORD){
+      const stored = JSON.parse(localStorage.getItem('ag_clients')||'[]');
+      const c = stored[0] || {id:'client-1',name:'Tech Solutions Ltda'};
+      sessionStorage.setItem('ag_role','client');
+      sessionStorage.setItem('ag_client_id',c.id);
+      sessionStorage.setItem('ag_user',c.name);
+      window.location.href = '/app';
+      return;
+    }
     const stored = JSON.parse(localStorage.getItem('ag_clients')||'[]');
-    const demo = [{email:'rh@tech.com',id:'client-1',name:'Tech Solutions Ltda'},{email:'rh@varejo.com',id:'client-2',name:'Varejo Nordeste S/A'},{email:'rh@saude.com',id:'client-3',name:'Clínica Saúde Total'}];
+    const demo = [{email:'rh@tech.com',password:'rh123',id:'client-1',name:'Tech Solutions Ltda'},{email:'rh@varejo.com',password:'rh456',id:'client-2',name:'Varejo Nordeste S/A'},{email:'rh@saude.com',password:'rh789',id:'client-3',name:'Clínica Saúde Total'}];
     const clients = stored.length ? stored : demo;
-    const c = clients.find(x=>x.email.toLowerCase()===email);
-    if(!c){showErr('E-mail não cadastrado. Fale com a AG Consultoria.');return}
+    const c = clients.find(x=>x.email.toLowerCase()===email && x.password===pass);
+    if(!c){showErr('Credenciais inválidas.');return}
     sessionStorage.setItem('ag_role','client');
     sessionStorage.setItem('ag_client_id',c.id);
     sessionStorage.setItem('ag_user',c.name);

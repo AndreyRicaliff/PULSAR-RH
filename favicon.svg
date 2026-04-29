@@ -2,7 +2,7 @@
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#3662FF"/>
-      <stop offset="100%" stop-color="#A55EFF"/>
+      <stop offset="100%" stop-color="#5E7FFF"/>
     </linearGradient>
     <linearGradient id="gloss" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.38"/>

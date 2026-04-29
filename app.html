@@ -15,7 +15,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --primary:#3662FF;--secondary:#A55EFF;--accent:#08C16A;
+  --primary:#3662FF;--secondary:#5E7FFF;--accent:#08C16A;
   --bg:#0E121A;--surface:#1B1F27;--surface2:#252B38;--surface3:#2E3444;
   --border:#2E3444;--text:#F0F2FF;--muted:#8B9CC0;--orange:#FFBC7D;
   --danger:#FF5C5C;--warn:#FFBC7D;
@@ -272,8 +272,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <linearGradient id="sideGrad" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stop-color="#3662FF" stop-opacity="0"/>
           <stop offset="45%" stop-color="#3662FF" stop-opacity="1"/>
-          <stop offset="65%" stop-color="#A55EFF" stop-opacity="1"/>
-          <stop offset="100%" stop-color="#A55EFF" stop-opacity="0"/>
+          <stop offset="65%" stop-color="#5E7FFF" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#5E7FFF" stop-opacity="0"/>
         </linearGradient>
       </defs>
       <path d="M0,9 L18,9 L24,6 L28,9 L31,2 L34,16 L37,9 L48,9 L52,5 L56,9 L100,9"/>
@@ -307,8 +307,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </nav>
   <div class="sidebar-footer">
     <div class="user-pill">
-      <div class="avatar" id="av">A</div>
-      <div class="meta">
+      <div class="avatar" id="av" onclick="openProfileModal()" title="Meu perfil" style="cursor:pointer">A</div>
+      <div class="meta" style="cursor:pointer" onclick="openProfileModal()">
         <strong id="user-name">Carregando...</strong>
         <span id="user-role">-</span>
       </div>
@@ -631,6 +631,26 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 </div>
 
+<!-- MODAL PERFIL -->
+<div class="modal-backdrop" id="modal-profile">
+  <div class="modal" style="max-width:380px">
+    <h2>Meu Perfil</h2>
+    <div id="profile-avatar-area" style="text-align:center;margin-bottom:24px"></div>
+    <div class="form-group">
+      <label>Nome de exibição</label>
+      <input id="profile-name" type="text" placeholder="Seu nome"/>
+    </div>
+    <div class="form-group">
+      <label>Perfil de acesso</label>
+      <input id="profile-role-display" type="text" disabled style="opacity:.45"/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-profile')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProfile()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="notif" id="notif"></div>
 
 <script>
@@ -817,14 +837,30 @@ function setClaudeKey(k){ localStorage.setItem('ag_claude_key',k) }
 function init(){
   initSeedData();
   const role=state.role;
+
+  // Restaura nome personalizado salvo
+  const savedName=localStorage.getItem('ag_profile_name_'+role);
+  if(savedName) state.user=savedName;
+
   document.getElementById('user-name').textContent=state.user;
   document.getElementById('user-role').textContent=role==='admin'?'Consultoria AG':'Empresa Cliente';
-  document.getElementById('av').textContent=state.user.charAt(0).toUpperCase();
+
+  // Avatar: logo candy para admin, iniciais para cliente
+  const av=document.getElementById('av');
+  if(role==='admin'){
+    av.innerHTML='<img src="/favicon.svg" style="width:30px;height:30px;border-radius:8px;display:block"/>';
+    av.style.cssText='width:30px;height:30px;border-radius:8px;background:none;padding:0;overflow:hidden;display:flex;align-items:center;cursor:pointer';
+  } else {
+    av.textContent=state.user.charAt(0).toUpperCase();
+  }
+
   if(role==='admin'){
     document.getElementById('admin-only').style.display='block';
   } else {
     document.getElementById('company-select').style.display='none';
     state.selectedCompany=state.clientId||'all';
+    // Oculta seções irrelevantes para cliente
+    document.querySelectorAll('.nav-item[onclick*="questions"]').forEach(el=>el.style.display='none');
   }
   populateCompanySelect();
   if(state.clientId) state.selectedCompany=state.clientId;
@@ -1111,7 +1147,7 @@ function initDashboardCharts(cid){
   destroyChart('chart-company');
   new Chart(document.getElementById('chart-company'),{
     type:'bar',
-    data:{labels:compLabels,datasets:[{label:'Score Médio',data:compData,backgroundColor:['#3662FF','#A55EFF','#08C16A','#FFBC7D'],borderRadius:6}]},
+    data:{labels:compLabels,datasets:[{label:'Score Médio',data:compData,backgroundColor:['#3662FF','#5E7FFF','#08C16A','#FFBC7D'],borderRadius:6}]},
     options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:10,ticks:{color:'#8B9CC0'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#8B9CC0'},grid:{display:false}}},plugins:{legend:{display:false}}}
   });
 }
@@ -1185,7 +1221,7 @@ function initPeopleCharts(cid){
   destroyChart('pa-radar');
   new Chart(document.getElementById('pa-radar'),{
     type:'radar',
-    data:{labels:presentDims.map(d=>dimLabels[d]||d),datasets:[{label:'Média',data:radarData,backgroundColor:'rgba(165,94,255,.2)',borderColor:'#A55EFF',borderWidth:2,pointBackgroundColor:'#A55EFF'}]},
+    data:{labels:presentDims.map(d=>dimLabels[d]||d),datasets:[{label:'Média',data:radarData,backgroundColor:'rgba(165,94,255,.2)',borderColor:'#5E7FFF',borderWidth:2,pointBackgroundColor:'#5E7FFF'}]},
     options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:10,ticks:{color:'#8B9CC0',backdropColor:'transparent',stepSize:2},grid:{color:'rgba(255,255,255,.05)'},pointLabels:{color:'#8B9CC0',font:{size:10}}}},plugins:{legend:{display:false}}}
   });
 
@@ -1205,7 +1241,7 @@ function initPeopleCharts(cid){
   destroyChart('pa-dept');
   new Chart(document.getElementById('pa-dept'),{
     type:'bar',
-    data:{labels:depts,datasets:[{label:'Colaboradores',data:deptCounts,backgroundColor:['#3662FF','#A55EFF','#08C16A','#FFBC7D','#FF5C5C'],borderRadius:6}]},
+    data:{labels:depts,datasets:[{label:'Colaboradores',data:deptCounts,backgroundColor:['#3662FF','#5E7FFF','#08C16A','#FFBC7D','#FF5C5C'],borderRadius:6}]},
     options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{ticks:{color:'#8B9CC0'},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#8B9CC0'},grid:{display:false}}},plugins:{legend:{display:false}}}
   });
 }
@@ -2298,6 +2334,38 @@ function notify(msg,type='info'){
   el.textContent=msg;
   el.className='notif show '+type;
   setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// ══════════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// PERFIL
+// ══════════════════════════════════════════════════════════
+function openProfileModal(){
+  const isAdmin=state.role==='admin';
+  const area=document.getElementById('profile-avatar-area');
+  if(isAdmin){
+    area.innerHTML=`
+      <img src="/favicon.svg" style="width:80px;height:80px;border-radius:20px;box-shadow:0 6px 24px rgba(54,98,255,.45);margin-bottom:8px"/>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:.5px">AG CONSULTORIA</div>`;
+  } else {
+    const ini=state.user.charAt(0).toUpperCase();
+    area.innerHTML=`<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:inline-flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff;margin-bottom:8px">${ini}</div>`;
+  }
+  document.getElementById('profile-name').value=state.user;
+  document.getElementById('profile-role-display').value=isAdmin?'Administrador — Consultoria AG':'Empresa Cliente';
+  openModal('modal-profile');
+}
+
+function saveProfile(){
+  const name=document.getElementById('profile-name').value.trim();
+  if(!name) return;
+  state.user=name;
+  localStorage.setItem('ag_profile_name_'+state.role,name);
+  document.getElementById('user-name').textContent=name;
+  closeModal('modal-profile');
+  notify('Perfil atualizado!','success');
 }
 
 // ══════════════════════════════════════════════════════════
