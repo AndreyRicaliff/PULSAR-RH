@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="/favicon.svg"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -16,92 +17,27 @@
   --bg:#0E121A;--surface:#1B1F27;--surface2:#252B38;
   --border:#2E3444;--text:#F0F2FF;--muted:#8B9CC0;
 }
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
 
-body{
-  font-family:'Inter',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-}
+.ambient{position:fixed;top:20%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(54,98,255,.07) 0%,rgba(165,94,255,.04) 40%,transparent 70%);pointer-events:none;animation:ambientPulse 4s ease-in-out infinite}
+@keyframes ambientPulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:1}50%{transform:translate(-50%,-50%) scale(1.15);opacity:.7}}
 
-/* ── Brilho ambiente único no centro ── */
-.ambient{
-  position:fixed;
-  top:20%;left:50%;
-  transform:translate(-50%,-50%);
-  width:600px;height:600px;
-  border-radius:50%;
-  background:radial-gradient(circle, rgba(54,98,255,.07) 0%, rgba(165,94,255,.04) 40%, transparent 70%);
-  pointer-events:none;
-  animation:ambientPulse 4s ease-in-out infinite;
-}
-@keyframes ambientPulse{
-  0%,100%{transform:translate(-50%,-50%) scale(1);opacity:1}
-  50%    {transform:translate(-50%,-50%) scale(1.15);opacity:.7}
-}
+.pulse-ring{position:fixed;top:20%;left:50%;transform:translate(-50%,-50%);border-radius:50%;border:1px solid rgba(54,98,255,.18);pointer-events:none;animation:ringExpand 4s ease-out infinite}
+.pulse-ring:nth-child(3){animation-delay:1.33s;border-color:rgba(165,94,255,.12)}
+.pulse-ring:nth-child(4){animation-delay:2.66s;border-color:rgba(54,98,255,.08)}
+@keyframes ringExpand{0%{width:60px;height:60px;opacity:.8}100%{width:500px;height:500px;opacity:0}}
 
-/* ── Anel único de pulso ── */
-.pulse-ring{
-  position:fixed;
-  top:20%;left:50%;
-  transform:translate(-50%,-50%);
-  border-radius:50%;
-  border:1px solid rgba(54,98,255,.18);
-  pointer-events:none;
-  animation:ringExpand 4s ease-out infinite;
-}
-.pulse-ring:nth-child(2){animation-delay:1.33s;border-color:rgba(165,94,255,.12)}
-.pulse-ring:nth-child(3){animation-delay:2.66s;border-color:rgba(54,98,255,.08)}
-@keyframes ringExpand{
-  0%  {width:60px;height:60px;opacity:.8}
-  100%{width:500px;height:500px;opacity:0}
-}
-
-/* ── Conteúdo central ── */
-.login-wrap{
-  width:100%;max-width:420px;
-  padding:16px;
-  position:relative;z-index:1;
-}
-
-/* ── Logo ── */
+.login-wrap{width:100%;max-width:420px;padding:16px;position:relative;z-index:1}
 .logo-area{text-align:center;margin-bottom:28px}
 
 .ekg-wrap{display:flex;justify-content:center;margin-bottom:16px}
 .ekg-svg{width:160px;height:32px}
-.ekg-path{
-  fill:none;
-  stroke:url(#ekgGrad);
-  stroke-width:1.6;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-  stroke-dasharray:255;
-  stroke-dashoffset:255;
-  animation:ekgDraw 3s ease-in-out infinite;
-}
-@keyframes ekgDraw{
-  0%  {stroke-dashoffset:255;opacity:0}
-  8%  {opacity:1}
-  60% {stroke-dashoffset:0;opacity:1}
-  80% {stroke-dashoffset:0;opacity:0}
-  100%{stroke-dashoffset:255;opacity:0}
-}
+.ekg-path{fill:none;stroke:url(#ekgGrad);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:255;stroke-dashoffset:255;animation:ekgDraw 3s ease-in-out infinite}
+@keyframes ekgDraw{0%{stroke-dashoffset:255;opacity:0}8%{opacity:1}60%{stroke-dashoffset:0;opacity:1}80%{stroke-dashoffset:0;opacity:0}100%{stroke-dashoffset:255;opacity:0}}
 
-.logo-area h1{
-  font-size:28px;font-weight:800;letter-spacing:2px;
-  background:linear-gradient(135deg,var(--primary),var(--secondary));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-.logo-area p{
-  color:var(--muted);font-size:12px;margin-top:6px;letter-spacing:.3px;
-}
+.logo-area h1{font-size:28px;font-weight:800;letter-spacing:2px;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-area p{color:var(--muted);font-size:12px;margin-top:6px;letter-spacing:.3px}
 
-/* ── Form ── */
 .tabs{display:flex;background:var(--surface2);border-radius:12px;padding:4px;margin-bottom:24px;gap:4px}
 .tab{flex:1;padding:10px;text-align:center;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:.2s}
 .tab.active{background:var(--primary);color:#fff}
@@ -111,45 +47,40 @@ body{
 label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
 input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:.2s}
 input:focus{border-color:var(--primary)}
-.btn{width:100%;padding:13px;border-radius:10px;border:none;cursor:pointer;font-family:inherit;font-size:15px;font-weight:600;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;transition:.2s}
+.btn{width:100%;padding:13px;border-radius:10px;border:none;cursor:pointer;font-family:inherit;font-size:15px;font-weight:600;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn:hover{opacity:.9;transform:translateY(-1px)}
+.btn:disabled{opacity:.5;transform:none;cursor:not-allowed}
 .err{background:#ff444420;border:1px solid #ff4444;border-radius:8px;padding:10px 14px;font-size:13px;color:#ff6666;margin-bottom:16px;display:none}
 
-/* ── Made by ── */
-.made-by-footer{
-  position:fixed;bottom:24px;left:0;right:0;
-  text-align:center;pointer-events:none;z-index:2;
-}
-.made-by-inner{
-  display:inline-flex;flex-direction:column;align-items:center;gap:5px;
-}
-.made-by-label{
-  font-size:9px;font-weight:500;letter-spacing:2px;text-transform:uppercase;
-  color:var(--muted);opacity:.5;
-}
-.made-by-logo{
-  height:20px;
-  filter:brightness(0) invert(1);
-  opacity:.9;
-  /* tint gradiente via CSS — não suportado nativamente, usamos SVG filter */
-}
-.made-by-tagline{
-  font-size:10px;letter-spacing:.5px;
-  background:linear-gradient(90deg,var(--primary),var(--secondary));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  font-weight:500;
-}
+/* Estado de link enviado */
+.magic-sent{display:none;text-align:center;padding:8px 0}
+.magic-sent .icon{font-size:40px;margin-bottom:12px}
+.magic-sent h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.magic-sent p{font-size:13px;color:var(--muted);line-height:1.5}
+.magic-sent .email-badge{display:inline-block;margin:10px 0;padding:6px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;font-size:13px;color:var(--text);font-weight:500}
+.resend-row{margin-top:16px;font-size:12px;color:var(--muted)}
+.resend-btn{background:none;border:none;color:var(--primary);font-family:inherit;font-size:12px;cursor:pointer;text-decoration:underline;padding:0}
+.resend-btn:disabled{color:var(--muted);text-decoration:none;cursor:default}
+
+/* Dica para cliente */
+.client-hint{background:rgba(54,98,255,.08);border:1px solid rgba(54,98,255,.2);border-radius:10px;padding:12px 14px;margin-bottom:18px;font-size:12px;color:var(--muted);line-height:1.5}
+.client-hint strong{color:var(--text)}
+
+/* Made by */
+.made-by-footer{position:fixed;bottom:24px;left:0;right:0;text-align:center;pointer-events:none;z-index:2}
+.made-by-inner{display:inline-flex;flex-direction:column;align-items:center;gap:5px}
+.made-by-label{font-size:9px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--muted);opacity:.5}
+.made-by-logo{height:20px;filter:brightness(0) invert(1);opacity:.9}
+.made-by-tagline{font-size:10px;letter-spacing:.5px;background:linear-gradient(90deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:500}
 </style>
 </head>
 <body>
 
-<!-- Brilho ambiente -->
 <div class="ambient"></div>
 <div class="pulse-ring"></div>
 <div class="pulse-ring"></div>
 <div class="pulse-ring"></div>
 
-<!-- Footer made by -->
 <div class="made-by-footer">
   <div class="made-by-inner">
     <span class="made-by-label">Feito por</span>
@@ -170,8 +101,7 @@ input:focus{border-color:var(--primary)}
             <stop offset="100%" stop-color="#A55EFF" stop-opacity="0"/>
           </linearGradient>
         </defs>
-        <polyline class="ekg-path"
-          points="0,16 22,16 32,12 38,16 43,3 49,29 54,16 72,16 79,9 86,16 160,16"/>
+        <polyline class="ekg-path" points="0,16 22,16 32,12 38,16 43,3 49,29 54,16 72,16 79,9 86,16 160,16"/>
       </svg>
     </div>
     <h1>PULSAR RH</h1>
@@ -185,60 +115,176 @@ input:focus{border-color:var(--primary)}
 
   <div class="card">
     <div id="err" class="err"></div>
-    <div class="form-group">
-      <label>E-mail</label>
-      <input id="email" type="email" placeholder="seu@email.com"/>
+
+    <!-- FORMULÁRIO ADMIN -->
+    <div id="form-admin">
+      <div class="form-group">
+        <label>E-mail</label>
+        <input id="admin-email" type="email" placeholder="seu@email.com"/>
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input id="admin-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button class="btn" onclick="doLogin()">Entrar</button>
     </div>
-    <div class="form-group">
-      <label>Senha</label>
-      <input id="pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+
+    <!-- FORMULÁRIO CLIENTE -->
+    <div id="form-client" style="display:none">
+      <div id="client-input">
+        <div class="client-hint">
+          <strong>Acesso simples.</strong> Digite seu e-mail e enviaremos um link de acesso direto. Sem senha para lembrar.
+        </div>
+        <div class="form-group">
+          <label>E-mail</label>
+          <input id="client-email" type="email" placeholder="rh@suaempresa.com" onkeydown="if(event.key==='Enter')sendMagicLink()"/>
+        </div>
+        <button class="btn" id="btn-magic" onclick="sendMagicLink()">
+          <span>Receber link de acesso</span>
+        </button>
+      </div>
+
+      <div class="magic-sent" id="magic-sent">
+        <div class="icon">📬</div>
+        <h3>Link enviado!</h3>
+        <p>Enviamos o link de acesso para</p>
+        <div class="email-badge" id="sent-email"></div>
+        <p>Clique no link do e-mail para entrar.<br/>Ele é válido por <strong>1 hora</strong>.</p>
+        <div class="resend-row">
+          Não recebeu? <button class="resend-btn" id="resend-btn" onclick="resendLink()" disabled>Reenviar em <span id="resend-count">30</span>s</button>
+        </div>
+      </div>
     </div>
-    <button class="btn" onclick="doLogin()">Entrar</button>
   </div>
 </div>
 
 <script>
-let currentTab='admin';
-function setTab(t){
-  currentTab=t;
-  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',(i===0&&t==='admin')||(i===1&&t==='client'))});
+// ── Supabase client ─────────────────────────────────────────
+let _sb = null;
+function getSB(){
+  if(_sb) return _sb;
+  if(typeof supabase !== 'undefined' && !OFFLINE_MODE)
+    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  return _sb;
 }
+
+// ── Verifica sessão ativa → redireciona direto ──────────────
+(async function checkSession(){
+  const sb = getSB();
+  if(!sb) return;
+  const {data:{session}} = await sb.auth.getSession();
+  if(session) window.location.href = '/app';
+})();
+
+// ── Tabs ────────────────────────────────────────────────────
+let currentTab = 'admin';
+function setTab(t){
+  currentTab = t;
+  document.querySelectorAll('.tab').forEach((el,i)=>{
+    el.classList.toggle('active',(i===0&&t==='admin')||(i===1&&t==='client'));
+  });
+  document.getElementById('form-admin').style.display = t==='admin' ? '' : 'none';
+  document.getElementById('form-client').style.display = t==='client' ? '' : 'none';
+  hideErr();
+}
+
 function showErr(msg){const e=document.getElementById('err');e.textContent=msg;e.style.display='block'}
 function hideErr(){document.getElementById('err').style.display='none'}
 
-const ADMIN_PASS=ADMIN_PASSWORD;
-
-const DEMO_CLIENTS=[
-  {email:'rh@tech.com',password:'rh123',name:'Tech Solutions Ltda',id:'client-1',status:'ativo'},
-  {email:'rh@varejo.com',password:'rh456',name:'Varejo Nordeste S/A',id:'client-2',status:'ativo'},
-  {email:'rh@saude.com',password:'rh789',name:'Clínica Saúde Total',id:'client-3',status:'ativo'},
-];
-
-function getStoredClients(){
-  try{const c=JSON.parse(localStorage.getItem('ag_clients')||'[]');return c.length?c:DEMO_CLIENTS}catch(e){return DEMO_CLIENTS}
-}
-
-function doLogin(){
+// ── Login admin ──────────────────────────────────────────────
+async function doLogin(){
   hideErr();
-  const email=document.getElementById('email').value.trim().toLowerCase();
-  const pass=document.getElementById('pass').value;
+  const email = document.getElementById('admin-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('admin-pass').value;
   if(!email||!pass){showErr('Preencha e-mail e senha.');return}
-  if(currentTab==='admin'){
-    if(email===ADMIN_EMAIL&&pass===ADMIN_PASS){
+
+  const sb = getSB();
+
+  if(sb){
+    // Produção: Supabase Auth
+    const btn = document.querySelector('#form-admin .btn');
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    const {error} = await sb.auth.signInWithPassword({email, password: pass});
+    btn.disabled = false; btn.textContent = 'Entrar';
+    if(error){showErr('Credenciais inválidas.');return}
+    window.location.href = '/app';
+  } else {
+    // Offline: verifica credenciais locais
+    if(email===ADMIN_EMAIL && pass===ADMIN_PASSWORD){
       sessionStorage.setItem('ag_role','admin');
       sessionStorage.setItem('ag_user','AG Consultoria');
-      window.location.href='/app';
-    } else showErr('Credenciais inválidas.');
-  } else {
-    const clients=getStoredClients();
-    const c=clients.find(x=>x.email.toLowerCase()===email&&x.password===pass&&x.status!=='inativo');
-    if(c){
-      sessionStorage.setItem('ag_role','client');
-      sessionStorage.setItem('ag_client_id',c.id);
-      sessionStorage.setItem('ag_user',c.name);
-      window.location.href='/app';
+      window.location.href = '/app';
     } else showErr('Credenciais inválidas.');
   }
+}
+
+// ── Magic link cliente ───────────────────────────────────────
+let sentEmail = '';
+async function sendMagicLink(){
+  hideErr();
+  const email = document.getElementById('client-email').value.trim().toLowerCase();
+  if(!email){showErr('Digite seu e-mail.');return}
+
+  const sb = getSB();
+  const btn = document.getElementById('btn-magic');
+
+  if(sb){
+    btn.disabled = true;
+    btn.querySelector('span').textContent = 'Enviando...';
+    const {error} = await sb.auth.signInWithOtp({
+      email,
+      options:{ emailRedirectTo: window.location.origin+'/app' }
+    });
+    btn.disabled = false;
+    btn.querySelector('span').textContent = 'Receber link de acesso';
+    if(error){showErr('Erro ao enviar. Verifique o e-mail e tente novamente.');return}
+  } else {
+    // Offline: simula login de cliente direto
+    const stored = JSON.parse(localStorage.getItem('ag_clients')||'[]');
+    const demo = [{email:'rh@tech.com',id:'client-1',name:'Tech Solutions Ltda'},{email:'rh@varejo.com',id:'client-2',name:'Varejo Nordeste S/A'},{email:'rh@saude.com',id:'client-3',name:'Clínica Saúde Total'}];
+    const clients = stored.length ? stored : demo;
+    const c = clients.find(x=>x.email.toLowerCase()===email);
+    if(!c){showErr('E-mail não cadastrado. Fale com a AG Consultoria.');return}
+    sessionStorage.setItem('ag_role','client');
+    sessionStorage.setItem('ag_client_id',c.id);
+    sessionStorage.setItem('ag_user',c.name);
+    window.location.href = '/app';
+    return;
+  }
+
+  sentEmail = email;
+  document.getElementById('sent-email').textContent = email;
+  document.getElementById('client-input').style.display = 'none';
+  document.getElementById('magic-sent').style.display = 'block';
+  startResendTimer();
+}
+
+// ── Timer reenvio ────────────────────────────────────────────
+function startResendTimer(){
+  let sec = 30;
+  const btn = document.getElementById('resend-btn');
+  const count = document.getElementById('resend-count');
+  btn.disabled = true;
+  const t = setInterval(()=>{
+    sec--;
+    count.textContent = sec;
+    if(sec<=0){
+      clearInterval(t);
+      btn.disabled = false;
+      btn.textContent = 'Reenviar link';
+    }
+  },1000);
+}
+
+async function resendLink(){
+  const sb = getSB();
+  if(sb){
+    await sb.auth.signInWithOtp({
+      email: sentEmail,
+      options:{ emailRedirectTo: window.location.origin+'/app' }
+    });
+  }
+  startResendTimer();
 }
 </script>
 </body>

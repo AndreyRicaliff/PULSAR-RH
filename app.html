@@ -641,6 +641,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
 // Garante compatibilidade caso config.js não seja carregado
 if(typeof OFFLINE_MODE === 'undefined') window.OFFLINE_MODE = true;
 
+// ── Supabase client ─────────────────────────────────────────
+let _sb = null;
+function getSB(){
+  if(_sb) return _sb;
+  if(typeof supabase !== 'undefined' && !OFFLINE_MODE)
+    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  return _sb;
+}
+
 let state = {
   role: sessionStorage.getItem('ag_role') || 'admin',
   user: sessionStorage.getItem('ag_user') || 'Admin',
@@ -839,7 +848,9 @@ function onCompanyChange(){
   renderPage(state.currentPage);
 }
 
-function doLogout(){
+async function doLogout(){
+  const sb = getSB();
+  if(sb) await sb.auth.signOut();
   sessionStorage.clear();
   window.location.href='/';
 }
@@ -2292,11 +2303,41 @@ function notify(msg,type='info'){
 // ══════════════════════════════════════════════════════════
 // BOOT
 // ══════════════════════════════════════════════════════════
-if(!sessionStorage.getItem('ag_role')){
-  window.location.href='/';
-} else {
+(async function boot(){
+  const sb = getSB();
+  if(!sb){
+    // Modo offline: verifica sessionStorage
+    if(!sessionStorage.getItem('ag_role')){window.location.href='/';return}
+    init();
+    return;
+  }
+
+  // Modo produção: verifica sessão Supabase
+  const {data:{session}} = await sb.auth.getSession();
+  if(!session){window.location.href='/';return}
+
+  const email = session.user.email.toLowerCase();
+  const isAdmin = email === ADMIN_EMAIL.toLowerCase();
+
+  if(isAdmin){
+    state.role = 'admin';
+    state.user = 'AG Consultoria';
+  } else {
+    state.role = 'client';
+    state.user = email;
+    const clients = getClients();
+    const c = clients.find(x=>x.email&&x.email.toLowerCase()===email);
+    state.clientId = c?.id || null;
+    if(c) state.user = c.name;
+  }
+
+  // Escuta mudanças (captura callback do magic link)
+  sb.auth.onAuthStateChange((event, s)=>{
+    if(event==='SIGNED_OUT') window.location.href='/';
+  });
+
   init();
-}
+})();
 </script>
 </body>
 </html>
