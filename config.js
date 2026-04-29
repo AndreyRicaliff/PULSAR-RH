@@ -13,8 +13,8 @@
 // ============================================================
 
 // ── SUPABASE ──────────────────────────────────────────────
-const SUPABASE_URL  = 'https://SEU_PROJECT_ID.supabase.co';
-const SUPABASE_ANON = 'sua-chave-anon-publica-aqui';
+const SUPABASE_URL  = 'https://rpkjljwqpzwqwerydbgu.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwa2psandxcHp3cXdlcnlkYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDAyNjMsImV4cCI6MjA5MzAxNjI2M30.7mxJ_oicfO9LnK-RP2xEwCTI0lAWvSUup6HGS5AByok';
 
 // ── MODO DE OPERAÇÃO ──────────────────────────────────────
 // true  → usa localStorage (demo offline, sem banco de dados)
