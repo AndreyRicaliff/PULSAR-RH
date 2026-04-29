@@ -252,6 +252,43 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .s-card-stat strong{color:var(--text)}
 .s-card-actions{display:flex;gap:6px}
 
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.filter-bar label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.filter-input{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 11px;color:var(--text);font-family:inherit;font-size:13px;outline:none;min-width:160px}
+.filter-input:focus{border-color:var(--primary)}
+.filter-select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;cursor:pointer}
+.filter-select:focus{border-color:var(--primary)}
+.filter-count{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
+.filter-reset{background:none;border:1px solid var(--border);border-radius:7px;padding:6px 12px;color:var(--muted);font-family:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.filter-reset:hover{border-color:var(--primary);color:var(--primary)}
+
+/* ── COMPANY GROUP ── */
+.company-group{margin-bottom:28px}
+.company-group-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.company-group-header h3{font-size:14px;font-weight:700;color:var(--text)}
+.company-group-header .badge{font-size:11px}
+.company-group-meta{font-size:12px;color:var(--muted)}
+
+/* ── KANBAN ── */
+.kanban-board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
+.kanban-col{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.kanban-col-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.kanban-col-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.kanban-col-count{font-size:12px;color:var(--muted)}
+.kanban-col-body{padding:12px;display:flex;flex-direction:column;gap:10px;min-height:80px}
+.kanban-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:default}
+.kanban-card-company{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.kanban-card h4{font-size:13px;font-weight:600;margin-bottom:6px;line-height:1.35}
+.kanban-card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.kanban-card-empty{text-align:center;padding:20px;color:var(--muted);font-size:12px}
+
+/* ── DANGER ZONE ── */
+.danger-zone{background:rgba(255,92,92,.05);border:1px solid rgba(255,92,92,.2);border-radius:12px;padding:20px;margin-top:24px}
+.danger-zone h3{font-size:13px;font-weight:700;color:var(--danger);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.danger-zone p{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px}
+.danger-zone-actions{display:flex;gap:10px;flex-wrap:wrap}
+
 /* ── NOTIFICATION ── */
 .notif{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;font-weight:500;z-index:9999;transform:translateX(120%);transition:.3s;max-width:320px}
 .notif.show{transform:translateX(0)}
@@ -632,10 +669,14 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
 <!-- Confirm Modal -->
 <div class="modal-backdrop" id="modal-confirm">
-  <div class="modal" style="max-width:420px;text-align:center">
-    <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+  <div class="modal" style="max-width:440px;text-align:center">
+    <div style="font-size:40px;margin-bottom:12px" id="confirm-icon">⚠️</div>
     <h2 id="confirm-title" style="border:none;padding:0;margin-bottom:12px;font-size:17px"></h2>
-    <p id="confirm-msg" style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px"></p>
+    <p id="confirm-msg" style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px"></p>
+    <div id="confirm-type-row" style="display:none;margin-bottom:16px;text-align:left">
+      <p id="confirm-type-label" style="font-size:12px;color:var(--muted);margin-bottom:6px"></p>
+      <input id="confirm-type-input" class="filter-input" style="width:100%;text-align:center;font-weight:700;letter-spacing:2px" placeholder="" oninput="onConfirmType(this)"/>
+    </div>
     <div style="display:flex;gap:10px;justify-content:center">
       <button class="btn btn-secondary" onclick="closeModal('modal-confirm')">Cancelar</button>
       <button class="btn btn-danger" id="confirm-ok">Confirmar</button>
@@ -690,6 +731,13 @@ let state = {
   selectedCompany: 'all',
   useStdQs: true,
   customQuestions: [],
+  filters: {
+    surveys:      { search:'', status:'', type:'' },
+    collaborators:{ search:'', dept:'', regime:'' },
+    actions:      { search:'', status:'', priority:'' },
+    matrizes:     { level:'', area:'' },
+    clients:      { search:'', plan:'', status:'' },
+  }
 };
 
 // ══════════════════════════════════════════════════════════
@@ -1268,30 +1316,75 @@ function initPeopleCharts(cid){
 const SURVEY_TYPE_LABELS = TYPE_LABELS;
 
 function renderSurveys(cid){
-  const surveys=getSurveys(cid);
-  if(!surveys.length) return `<div class="section-header"><h2>Pesquisas</h2></div><div class="empty"><div class="empty-icon">📋</div><h3>Nenhuma pesquisa</h3><p>Crie a primeira pesquisa clicando em "+ Nova Pesquisa".</p></div>`;
-  const cards=surveys.map(s=>{
+  const f=state.filters.surveys;
+  let surveys=getSurveys(cid);
+  const total=surveys.length;
+  if(f.status) surveys=surveys.filter(s=>s.status===f.status);
+  if(f.type)   surveys=surveys.filter(s=>s.type===f.type);
+  if(f.search) surveys=surveys.filter(s=>s.title.toLowerCase().includes(f.search.toLowerCase())||(getClientById(s.client_id)?.name||'').toLowerCase().includes(f.search.toLowerCase()));
+
+  const makeCard=(s,showCompany=true)=>{
     const client=getClientById(s.client_id);
     const statusBadge={ativa:'badge-green',concluida:'badge-blue',pausada:'badge-orange'}[s.status]||'badge-gray';
+    const statusLabel={ativa:'Ativa',concluida:'Concluída',pausada:'Pausada'}[s.status]||s.status;
     const link=`${window.location.origin}/responder?token=${s.public_token}`;
     return `<div class="s-card">
-      <div class="s-card-type">${SURVEY_TYPE_LABELS[s.type]||s.type}</div>
+      <div class="s-card-type">${SURVEY_TYPE_LABELS[s.type]||s.type} · <span class="badge ${statusBadge}" style="font-size:10px">${statusLabel}</span></div>
       <h3>${s.title}</h3>
-      <p>${client?.name||'—'} · ${s.period||'pontual'} · <span class="badge ${statusBadge}">${s.status}</span></p>
+      <p style="margin-bottom:8px">${showCompany&&client?`<strong>${client.name}</strong> · `:''}<span style="color:var(--muted)">${s.period||'pontual'}</span>${s.deadline?` · prazo ${s.deadline}`:''}</p>
       <div class="s-card-footer">
-        <div class="s-card-stat"><strong>${s.total_invited}</strong> convidados</div>
+        <div class="s-card-stat"><strong>${s.total_invited||0}</strong> convidados</div>
         <div class="s-card-actions">
-          <button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText('${link}');notify('Link copiado!','success')">🔗</button>
+          <button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText('${link}');notify('Link copiado!','success')" title="Copiar link de resposta">🔗</button>
           <button class="btn btn-sm btn-primary" onclick="openResults('${s.id}')">Ver</button>
-          ${s.status==='ativa'?`<button class="btn btn-sm btn-secondary" onclick="changeSurveyStatus('${s.id}','pausada')">⏸</button>`:''}
-          ${s.status==='pausada'?`<button class="btn btn-sm btn-secondary" onclick="changeSurveyStatus('${s.id}','ativa')">▶</button>`:''}
-          ${s.status!=='concluida'?`<button class="btn btn-sm btn-secondary" onclick="changeSurveyStatus('${s.id}','concluida')">✓</button>`:''}
-          <button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.2)" onclick="confirmAction('Apagar pesquisa?','As respostas e dados desta pesquisa serão apagados permanentemente.','deleteSurvey','${s.id}')">🗑</button>
+          ${s.status==='ativa'?`<button class="btn btn-sm btn-secondary" onclick="changeSurveyStatus('${s.id}','pausada')" title="Pausar">⏸</button>`:''}
+          ${s.status==='pausada'?`<button class="btn btn-sm btn-secondary" onclick="changeSurveyStatus('${s.id}','ativa')" title="Reativar">▶</button>`:''}
+          ${s.status!=='concluida'?`<button class="btn btn-sm btn-secondary" onclick="changeSurveyStatus('${s.id}','concluida')" title="Concluir">✓</button>`:''}
+          <button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.2)" onclick="confirmAction('Apagar pesquisa?','Todas as respostas e dados desta pesquisa serão apagados permanentemente.','deleteSurvey','${s.id}','APAGAR')" title="Apagar pesquisa">🗑</button>
         </div>
       </div>
     </div>`;
-  }).join('');
-  return `<div class="section-header"><h2>Pesquisas (${surveys.length})</h2></div><div class="survey-cards">${cards}</div>`;
+  };
+
+  const filterBar=`
+  <div class="filter-bar">
+    <label>Filtrar</label>
+    <input class="filter-input" placeholder="Buscar título ou empresa..." value="${f.search}" oninput="setFilter('surveys','search',this.value)" style="flex:1;min-width:180px"/>
+    <select class="filter-select" onchange="setFilter('surveys','status',this.value)">
+      <option value="">Todos os status</option>
+      <option value="ativa" ${f.status==='ativa'?'selected':''}>Ativa</option>
+      <option value="pausada" ${f.status==='pausada'?'selected':''}>Pausada</option>
+      <option value="concluida" ${f.status==='concluida'?'selected':''}>Concluída</option>
+    </select>
+    <select class="filter-select" onchange="setFilter('surveys','type',this.value)">
+      <option value="">Todos os tipos</option>
+      ${Object.entries(SURVEY_TYPE_LABELS).map(([k,v])=>`<option value="${k}" ${f.type===k?'selected':''}>${v}</option>`).join('')}
+    </select>
+    ${(f.search||f.status||f.type)?`<button class="filter-reset" onclick="clearFilters('surveys')">✕ Limpar</button>`:''}
+    <span class="filter-count">${surveys.length} de ${total}</span>
+  </div>`;
+
+  if(!total) return `<div class="section-header"><h2>Pesquisas</h2></div>${filterBar}<div class="empty"><div class="empty-icon">📋</div><h3>Nenhuma pesquisa</h3><p>Crie a primeira pesquisa clicando em "+ Nova Pesquisa".</p></div>`;
+  if(!surveys.length) return `<div class="section-header"><h2>Pesquisas (${total})</h2></div>${filterBar}<div class="empty"><div class="empty-icon">🔍</div><h3>Nenhum resultado</h3><p>Tente ajustar os filtros.</p></div>`;
+
+  // Agrupar por empresa quando "Todas"
+  if(cid==='all'){
+    const clients=getClients();
+    const groups=clients.map(cl=>{
+      const cs=surveys.filter(s=>s.client_id===cl.id);
+      if(!cs.length) return '';
+      return `<div class="company-group">
+        <div class="company-group-header">
+          <h3>${cl.name}</h3>
+          <span class="badge badge-gray">${cs.length} pesquisa${cs.length!==1?'s':''}</span>
+          <span class="company-group-meta">${cl.segment||''}</span>
+        </div>
+        <div class="survey-cards">${cs.map(s=>makeCard(s,false)).join('')}</div>
+      </div>`;
+    }).join('');
+    return `<div class="section-header"><h2>Pesquisas (${surveys.length})</h2></div>${filterBar}${groups}`;
+  }
+  return `<div class="section-header"><h2>Pesquisas (${surveys.length})</h2></div>${filterBar}<div class="survey-cards">${surveys.map(s=>makeCard(s,false)).join('')}</div>`;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1388,46 +1481,142 @@ function switchQTab(type,el){
 // COLLABORATORS
 // ══════════════════════════════════════════════════════════
 function renderCollabs(cid){
-  const collabs=getCollabs(cid);
-  if(!collabs.length) return `<div class="section-header"><h2>Colaboradores</h2></div><div class="empty"><div class="empty-icon">👥</div><h3>Nenhum colaborador</h3><p>Adicione colaboradores clicando no botão acima.</p></div>`;
-  return `<div class="section-header"><h2>Colaboradores (${collabs.length})</h2></div>
+  const f=state.filters.collaborators;
+  let collabs=getCollabs(cid);
+  const total=collabs.length;
+  if(f.search) collabs=collabs.filter(c=>c.name.toLowerCase().includes(f.search.toLowerCase())||(c.role||'').toLowerCase().includes(f.search.toLowerCase())||(c.email||'').toLowerCase().includes(f.search.toLowerCase()));
+  if(f.dept)   collabs=collabs.filter(c=>(c.department||'')===f.dept);
+  if(f.regime) collabs=collabs.filter(c=>(c.regime||'')===f.regime);
+
+  const allCollabs=getCollabs(cid);
+  const depts=[...new Set(allCollabs.map(c=>c.department).filter(Boolean))].sort();
+  const regimes=[...new Set(allCollabs.map(c=>c.regime).filter(Boolean))].sort();
+
+  const filterBar=`
+  <div class="filter-bar">
+    <label>Filtrar</label>
+    <input class="filter-input" placeholder="Buscar nome, cargo, e-mail..." value="${f.search}" oninput="setFilter('collaborators','search',this.value)" style="flex:1;min-width:180px"/>
+    <select class="filter-select" onchange="setFilter('collaborators','dept',this.value)">
+      <option value="">Todos os depto.</option>
+      ${depts.map(d=>`<option value="${d}" ${f.dept===d?'selected':''}>${d}</option>`).join('')}
+    </select>
+    <select class="filter-select" onchange="setFilter('collaborators','regime',this.value)">
+      <option value="">Todos os regimes</option>
+      ${regimes.map(r=>`<option value="${r}" ${f.regime===r?'selected':''}>${r}</option>`).join('')}
+    </select>
+    ${(f.search||f.dept||f.regime)?`<button class="filter-reset" onclick="clearFilters('collaborators')">✕ Limpar</button>`:''}
+    <span class="filter-count">${collabs.length} de ${total}</span>
+  </div>`;
+
+  const makeTable=(list,showCompany=true)=>`
   <div class="table-wrap"><table>
-    <thead><tr><th>Nome</th><th>Cargo</th><th>Departamento</th><th>Empresa</th><th>Regime</th><th>Status</th></tr></thead>
-    <tbody>${collabs.map(c=>{
+    <thead><tr><th>Nome</th><th>Cargo</th><th>Departamento</th>${showCompany?'<th>Empresa</th>':''}<th>Regime</th><th>Status</th></tr></thead>
+    <tbody>${list.map(c=>{
       const client=getClientById(c.client_id);
       return `<tr>
         <td><strong>${c.name}</strong><br/><span style="font-size:11px;color:var(--muted)">${c.email||''}</span></td>
         <td>${c.role||'—'}</td><td>${c.department||'—'}</td>
-        <td>${client?.name||'—'}</td>
+        ${showCompany?`<td>${client?.name||'—'}</td>`:''}
         <td><span class="badge badge-gray">${c.regime||'—'}</span></td>
-        <td><span class="badge ${c.status==='ativo'?'badge-green':'badge-red'}">${c.status||'ativo'}</span></td>
+        <td><span class="badge ${(c.status||'ativo')==='ativo'?'badge-green':'badge-red'}">${c.status||'ativo'}</span></td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
+
+  if(!total) return `<div class="section-header"><h2>Colaboradores</h2></div>${filterBar}<div class="empty"><div class="empty-icon">👥</div><h3>Nenhum colaborador</h3><p>Adicione colaboradores clicando no botão acima.</p></div>`;
+  if(!collabs.length) return `<div class="section-header"><h2>Colaboradores (${total})</h2></div>${filterBar}<div class="empty"><div class="empty-icon">🔍</div><h3>Nenhum resultado</h3><p>Tente ajustar os filtros.</p></div>`;
+
+  if(cid==='all'){
+    const clients=getClients();
+    const groups=clients.map(cl=>{
+      const cs=collabs.filter(c=>c.client_id===cl.id);
+      if(!cs.length) return '';
+      return `<div class="company-group">
+        <div class="company-group-header">
+          <h3>${cl.name}</h3>
+          <span class="badge badge-gray">${cs.length} colaborador${cs.length!==1?'es':''}</span>
+          <span class="company-group-meta">HC cadastrado: ${cl.headcount||0}</span>
+        </div>
+        ${makeTable(cs,false)}
+      </div>`;
+    }).join('');
+    return `<div class="section-header"><h2>Colaboradores (${collabs.length})</h2></div>${filterBar}${groups}`;
+  }
+  return `<div class="section-header"><h2>Colaboradores (${collabs.length})</h2></div>${filterBar}${makeTable(collabs,false)}`;
 }
 
 // ══════════════════════════════════════════════════════════
 // ACTIONS
 // ══════════════════════════════════════════════════════════
 function renderActions(cid){
-  const actions=getActions(cid);
-  if(!actions.length) return `<div class="section-header"><h2>Planos de Ação</h2></div><div class="empty"><div class="empty-icon">✅</div><h3>Nenhum plano</h3><p>Crie planos de ação baseados nos resultados das pesquisas.</p></div>`;
+  const f=state.filters.actions;
+  let actions=getActions(cid);
+  const total=actions.length;
+  if(f.search)   actions=actions.filter(a=>a.title.toLowerCase().includes(f.search.toLowerCase())||(a.responsible||'').toLowerCase().includes(f.search.toLowerCase()));
+  if(f.priority) actions=actions.filter(a=>a.priority===f.priority);
+  if(f.status)   actions=actions.filter(a=>a.status===f.status);
+
   const priorityBadge={alta:'badge-red',media:'badge-orange',baixa:'badge-green'};
-  const statusBadge={pendente:'badge-orange',em_andamento:'badge-blue',concluido:'badge-green'};
-  return `<div class="section-header"><h2>Planos de Ação (${actions.length})</h2></div>
-  <div class="table-wrap"><table>
-    <thead><tr><th>Título</th><th>Empresa</th><th>Área</th><th>Responsável</th><th>Prazo</th><th>Prioridade</th><th>Status</th></tr></thead>
-    <tbody>${actions.map(a=>{
-      const client=getClientById(a.client_id);
-      return `<tr>
-        <td><strong>${a.title}</strong></td>
-        <td>${client?.name||'—'}</td><td>${a.area||'—'}</td><td>${a.responsible||'—'}</td>
-        <td>${a.deadline||'—'}</td>
-        <td><span class="badge ${priorityBadge[a.priority]||'badge-gray'}">${a.priority}</span></td>
-        <td><span class="badge ${statusBadge[a.status]||'badge-gray'}">${(a.status||'').replace('_',' ')}</span></td>
-      </tr>`;
-    }).join('')}</tbody>
-  </table></div>`;
+  const priorityLabel={alta:'Alta',media:'Média',baixa:'Baixa'};
+
+  const filterBar=`
+  <div class="filter-bar">
+    <label>Filtrar</label>
+    <input class="filter-input" placeholder="Buscar título ou responsável..." value="${f.search}" oninput="setFilter('actions','search',this.value)" style="flex:1;min-width:180px"/>
+    <select class="filter-select" onchange="setFilter('actions','priority',this.value)">
+      <option value="">Todas as prioridades</option>
+      <option value="alta" ${f.priority==='alta'?'selected':''}>Alta</option>
+      <option value="media" ${f.priority==='media'?'selected':''}>Média</option>
+      <option value="baixa" ${f.priority==='baixa'?'selected':''}>Baixa</option>
+    </select>
+    <select class="filter-select" onchange="setFilter('actions','status',this.value)">
+      <option value="">Todos os status</option>
+      <option value="pendente" ${f.status==='pendente'?'selected':''}>Pendente</option>
+      <option value="em_andamento" ${f.status==='em_andamento'?'selected':''}>Em andamento</option>
+      <option value="concluido" ${f.status==='concluido'?'selected':''}>Concluído</option>
+    </select>
+    ${(f.search||f.priority||f.status)?`<button class="filter-reset" onclick="clearFilters('actions')">✕ Limpar</button>`:''}
+    <span class="filter-count">${actions.length} de ${total}</span>
+  </div>`;
+
+  if(!total) return `<div class="section-header"><h2>Planos de Ação</h2></div>${filterBar}<div class="empty"><div class="empty-icon">✅</div><h3>Nenhum plano</h3><p>Crie planos de ação baseados nos resultados das pesquisas.</p></div>`;
+  if(!actions.length) return `<div class="section-header"><h2>Planos de Ação (${total})</h2></div>${filterBar}<div class="empty"><div class="empty-icon">🔍</div><h3>Nenhum resultado</h3><p>Tente ajustar os filtros.</p></div>`;
+
+  const makeCard=(a)=>{
+    const client=getClientById(a.client_id);
+    return `<div class="kanban-card">
+      <div class="kanban-card-company">${client?.name||'—'}</div>
+      <h4>${a.title}</h4>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${a.area||'—'} · ${a.responsible||'—'}</div>
+      <div class="kanban-card-meta">
+        <span class="badge ${priorityBadge[a.priority]||'badge-gray'}">${priorityLabel[a.priority]||a.priority}</span>
+        ${a.deadline?`<span style="font-size:11px;color:var(--muted)">📅 ${a.deadline}</span>`:''}
+      </div>
+    </div>`;
+  };
+
+  const cols=[
+    {key:'pendente',     label:'Pendente',      color:'var(--orange)', count:0, cards:''},
+    {key:'em_andamento', label:'Em Andamento',   color:'var(--primary)',count:0, cards:''},
+    {key:'concluido',    label:'Concluído',      color:'var(--accent)', count:0, cards:''},
+  ];
+  actions.forEach(a=>{
+    const col=cols.find(c=>c.key===a.status)||cols[0];
+    col.count++; col.cards+=makeCard(a);
+  });
+
+  const kanban=`<div class="kanban-board">${cols.map(col=>`
+    <div class="kanban-col">
+      <div class="kanban-col-header">
+        <span class="kanban-col-title" style="color:${col.color}">${col.label}</span>
+        <span class="kanban-col-count">${col.count}</span>
+      </div>
+      <div class="kanban-col-body">
+        ${col.cards||`<div class="kanban-card-empty">Nenhum plano</div>`}
+      </div>
+    </div>`).join('')}</div>`;
+
+  return `<div class="section-header"><h2>Planos de Ação (${actions.length})</h2></div>${filterBar}${kanban}`;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1722,13 +1911,23 @@ function initIndicadoresCharts(cid){
 // MATRIZES DE RISCO (NR-1 + Geral)
 // ══════════════════════════════════════════════════════════
 function renderMatrizes(cid){
-  const risks=getNR1Risks(cid);
+  const allRisks=getNR1Risks(cid);
   const isAdmin=state.role==='admin';
+  const f=state.filters.matrizes;
 
   const PROB_LABELS=['','Raro','Improvável','Possível','Provável','Q. Certo'];
   const SEV_LABELS=['','Insignif.','Menor','Moderado','Grave','Catastrófico'];
   const riskClass=(p,s)=>{const sc=p*s;return sc>=17?'risk-critical':sc>=10?'risk-high':sc>=5?'risk-medium':'risk-low';};
   const riskLabel=(p,s)=>{const sc=p*s;return sc>=17?'CRÍTICO':sc>=10?'ALTO':sc>=5?'MÉDIO':'BAIXO';};
+  const scoreLevel=(r)=>{const s=r.probability*r.severity;return s>=17?'critico':s>=10?'alto':s>=5?'medio':'baixo';};
+
+  // Matrix always uses all risks for the heatmap; table uses filtered
+  const risks=allRisks;
+  let tableRisks=[...allRisks];
+  if(f.level) tableRisks=tableRisks.filter(r=>scoreLevel(r)===f.level);
+  if(f.area)  tableRisks=tableRisks.filter(r=>r.area===f.area);
+
+  const areas=[...new Set(allRisks.map(r=>r.area))].sort();
 
   // Build 5x5 grid (prob rows 5→1, sev cols 1→5)
   let gridCells='';
@@ -1751,9 +1950,8 @@ function renderMatrizes(cid){
     }
   }
 
-  // Risks by area table
-  const areas=[...new Set(risks.map(r=>r.area))];
-  const areaRows=risks.sort((a,b)=>(b.probability*b.severity)-(a.probability*a.severity)).map(r=>{
+  // Risks by area table (filtered)
+  const areaRows=tableRisks.sort((a,b)=>(b.probability*b.severity)-(a.probability*a.severity)).map(r=>{
     const score=r.probability*r.severity;
     const cls=riskClass(r.probability,r.severity);
     const client=getClientById(r.client_id);
@@ -1809,10 +2007,26 @@ function renderMatrizes(cid){
 </div>
 
 <!-- Detail table -->
-<div class="section-header"><h2>Fatores de Risco Identificados</h2></div>
-${risks.length?`<div class="table-wrap"><table>
+<div class="section-header"><h2>Fatores de Risco Identificados (${allRisks.length})</h2></div>
+<div class="filter-bar">
+  <label>Filtrar</label>
+  <select class="filter-select" onchange="setFilter('matrizes','level',this.value)">
+    <option value="">Todos os níveis</option>
+    <option value="critico" ${f.level==='critico'?'selected':''}>🔴 Crítico (17–25)</option>
+    <option value="alto" ${f.level==='alto'?'selected':''}>🟠 Alto (10–16)</option>
+    <option value="medio" ${f.level==='medio'?'selected':''}>🟡 Médio (5–9)</option>
+    <option value="baixo" ${f.level==='baixo'?'selected':''}>🟢 Baixo (1–4)</option>
+  </select>
+  <select class="filter-select" onchange="setFilter('matrizes','area',this.value)">
+    <option value="">Todas as áreas</option>
+    ${areas.map(a=>`<option value="${a}" ${f.area===a?'selected':''}>${a}</option>`).join('')}
+  </select>
+  ${(f.level||f.area)?`<button class="filter-reset" onclick="clearFilters('matrizes')">✕ Limpar</button>`:''}
+  <span class="filter-count">${tableRisks.length} de ${allRisks.length}</span>
+</div>
+${allRisks.length?`<div class="table-wrap"><table>
   <thead><tr><th>Área NR-1</th><th>Fator de Risco</th><th>Empresa</th><th style="text-align:center">P</th><th style="text-align:center">S</th><th style="text-align:center">Score</th><th>Nível</th><th>Evidências</th>${isAdmin?'<th></th>':''}</tr></thead>
-  <tbody>${areaRows}</tbody>
+  <tbody>${areaRows||`<tr><td colspan="${isAdmin?9:8}" style="text-align:center;padding:24px;color:var(--muted)">Nenhum risco corresponde aos filtros selecionados.</td></tr>`}</tbody>
 </table></div>`:
 `<div class="empty"><div class="empty-icon">🗂️</div><h3>Nenhum risco cadastrado</h3><p>Clique em "+ Cadastrar Risco" para mapear os fatores psicossociais da empresa.</p></div>`}`;
 }
@@ -2030,15 +2244,34 @@ function deleteNR1Risk(id){
 // CLIENTS (admin only)
 // ══════════════════════════════════════════════════════════
 function renderClients(){
-  const clients=getClients();
-  const planBadge={completo:'badge-green',intermediario:'badge-blue',basico:'badge-gray'};
-  const planLabel={completo:'Completo',intermediario:'Intermediário',basico:'Básico'};
   const isAdmin=state.role==='admin';
   if(!isAdmin) return '<div class="empty"><div class="empty-icon">🔒</div><h3>Acesso restrito</h3><p>Esta área é exclusiva do administrador.</p></div>';
+  const f=state.filters.clients;
+  let clients=getClients();
+  if(f.search) clients=clients.filter(c=>c.name.toLowerCase().includes(f.search.toLowerCase())||c.email.toLowerCase().includes(f.search.toLowerCase())||(c.contact_name||'').toLowerCase().includes(f.search.toLowerCase()));
+  if(f.plan) clients=clients.filter(c=>c.plan===f.plan);
+  if(f.status) clients=clients.filter(c=>(c.status||'ativo')===f.status);
+  const all=getClients();
+  const planBadge={completo:'badge-green',intermediario:'badge-blue',basico:'badge-gray'};
+  const planLabel={completo:'Completo',intermediario:'Intermediário',basico:'Básico'};
   return `
-  <div class="section-header">
-    <h2>Clientes (${clients.length})</h2>
-    <button class="btn btn-danger btn-sm" onclick="confirmAction('Zerar todos os dados?','Isso apagará TODAS as respostas, pesquisas e colaboradores de todas as empresas. Os clientes serão mantidos.','resetAllData')">⚠️ Zerar Dados</button>
+  <div class="section-header"><h2>Clientes (${all.length})</h2></div>
+  <div class="filter-bar">
+    <label>Filtrar</label>
+    <input class="filter-input" placeholder="Buscar empresa ou e-mail..." value="${f.search}" oninput="setFilter('clients','search',this.value)" style="flex:1;min-width:200px"/>
+    <select class="filter-select" onchange="setFilter('clients','plan',this.value)">
+      <option value="">Todos os planos</option>
+      <option value="completo" ${f.plan==='completo'?'selected':''}>Completo</option>
+      <option value="intermediario" ${f.plan==='intermediario'?'selected':''}>Intermediário</option>
+      <option value="basico" ${f.plan==='basico'?'selected':''}>Básico</option>
+    </select>
+    <select class="filter-select" onchange="setFilter('clients','status',this.value)">
+      <option value="">Todos os status</option>
+      <option value="ativo" ${f.status==='ativo'?'selected':''}>Ativo</option>
+      <option value="inativo" ${f.status==='inativo'?'selected':''}>Inativo</option>
+    </select>
+    ${(f.search||f.plan||f.status)?`<button class="filter-reset" onclick="clearFilters('clients')">✕ Limpar</button>`:''}
+    <span class="filter-count">${clients.length} de ${all.length}</span>
   </div>
   <div class="table-wrap"><table>
     <thead><tr><th>Empresa</th><th>CNPJ</th><th>Segmento</th><th>HC</th><th>Contato RH</th><th>Plano</th><th>E-mail</th><th>Status</th><th>Ações</th></tr></thead>
@@ -2050,20 +2283,26 @@ function renderClients(){
       <td style="font-size:12px;color:var(--muted)">${c.contact_name||'—'}</td>
       <td><span class="badge ${planBadge[c.plan]||'badge-gray'}">${planLabel[c.plan]||c.plan}</span></td>
       <td style="font-size:12px">${c.email}</td>
-      <td>
-        <span class="badge ${(c.status||'ativo')==='ativo'?'badge-green':'badge-red'}" style="cursor:pointer" onclick="toggleClientStatus('${c.id}')" title="Clique para alternar status">${(c.status||'ativo')==='ativo'?'Ativo':'Inativo'}</span>
-      </td>
+      <td><span class="badge ${(c.status||'ativo')==='ativo'?'badge-green':'badge-red'}" style="cursor:pointer" onclick="toggleClientStatus('${c.id}')" title="Clique para alternar">${(c.status||'ativo')==='ativo'?'Ativo':'Inativo'}</span></td>
       <td style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn btn-sm btn-secondary" onclick="viewCompany('${c.id}')" title="Ver dashboard deste cliente">📊</button>
-        <button class="btn btn-sm btn-secondary" onclick="openEditClientModal('${c.id}')" title="Editar dados do cliente">✏️</button>
-        <button class="btn btn-sm btn-primary" onclick="sendClientAccess('${c.id}')" title="Enviar link de acesso por e-mail">✉️ Acesso</button>
-        <button class="btn btn-sm btn-secondary" onclick="copySurveyLink('${c.id}')" title="Copiar link da pesquisa ativa">🔗 Pesquisa</button>
-        <button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.2)" onclick="confirmAction('Apagar cliente &quot;${c.name}&quot;?','Isso apagará o cliente e TODOS os seus dados (pesquisas, respostas, colaboradores, planos de ação). Esta ação não pode ser desfeita.','deleteClient','${c.id}')" title="Apagar cliente">🗑</button>
+        <button class="btn btn-sm btn-secondary" onclick="viewCompany('${c.id}')" title="Ver dashboard">📊</button>
+        <button class="btn btn-sm btn-secondary" onclick="openEditClientModal('${c.id}')" title="Editar">✏️</button>
+        <button class="btn btn-sm btn-primary" onclick="sendClientAccess('${c.id}')" title="Enviar link de acesso">✉️ Acesso</button>
+        <button class="btn btn-sm btn-secondary" onclick="copySurveyLink('${c.id}')" title="Copiar link de pesquisa">🔗</button>
+        <button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.2)" onclick="confirmAction('Apagar cliente &quot;${c.name}&quot;?','Todos os dados deste cliente (pesquisas, respostas, colaboradores, planos de ação) serão apagados permanentemente.','deleteClient','${c.id}','APAGAR')" title="Apagar cliente">🗑</button>
       </td>
     </tr>`).join(''):
-    '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">Nenhum cliente cadastrado. Clique em "+ Novo Cliente" para começar.</td></tr>'}
+    `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">${all.length?'Nenhum cliente corresponde aos filtros.':'Nenhum cliente cadastrado ainda.'}</td></tr>`}
     </tbody>
-  </table></div>`;
+  </table></div>
+  <div class="danger-zone">
+    <h3>🚨 Zona de Perigo</h3>
+    <p>As ações abaixo são irreversíveis. Os dados apagados não podem ser recuperados. Proceda com extremo cuidado.</p>
+    <div class="danger-zone-actions">
+      <button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.3)" onclick="confirmAction('Zerar dados operacionais?','Apagará TODAS as respostas, pesquisas, colaboradores, indicadores e planos de ação de TODAS as empresas. Clientes cadastrados serão mantidos.','resetAllData','','ZERAR')">🗑 Zerar Dados de Pesquisas</button>
+      <button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.3)" onclick="confirmAction('Zerar tudo incluindo clientes?','Apagará TODOS os dados incluindo clientes cadastrados. O sistema voltará ao estado inicial com dados de demonstração.','resetEverything','','REINICIAR')">⚠️ Reiniciar Sistema Completo</button>
+    </div>
+  </div>`;
 }
 
 async function sendClientAccess(clientId){
@@ -2121,8 +2360,26 @@ function deleteClient(id){
 
 function resetAllData(){
   ['surveys','collaborators','responses','answers','actions','survey_questions','indicators','nr1risks'].forEach(k=>setData(k,[]));
-  notify('Todos os dados foram zerados.','info');
+  notify('Dados operacionais zerados.','info');
   renderPage('clients');
+}
+
+function resetEverything(){
+  ['clients','surveys','collaborators','responses','answers','actions','survey_questions','indicators','nr1risks'].forEach(k=>setData(k,[]));
+  localStorage.removeItem('ag_initialized');
+  localStorage.removeItem('ag_claude_key');
+  notify('Sistema reiniciado. Recarregando...','info');
+  setTimeout(()=>location.reload(),1200);
+}
+
+function setFilter(page, key, val){
+  state.filters[page][key]=val;
+  renderPage(state.currentPage);
+}
+
+function clearFilters(page){
+  Object.keys(state.filters[page]).forEach(k=>state.filters[page][k]='');
+  renderPage(state.currentPage);
 }
 
 function deleteSurvey(id){
@@ -2143,15 +2400,40 @@ function changeSurveyStatus(id,status){
   renderPage('surveys');
 }
 
-function confirmAction(title,msg,fn,arg=''){
+function confirmAction(title,msg,fn,arg='',typeWord=''){
+  document.getElementById('confirm-icon').textContent=typeWord?'🚨':'⚠️';
   document.getElementById('confirm-title').textContent=title;
   document.getElementById('confirm-msg').textContent=msg;
-  document.getElementById('confirm-ok').onclick=()=>{
+  const typeRow=document.getElementById('confirm-type-row');
+  const typeInput=document.getElementById('confirm-type-input');
+  const okBtn=document.getElementById('confirm-ok');
+  if(typeWord){
+    typeRow.style.display='block';
+    document.getElementById('confirm-type-label').textContent=`Para confirmar, digite "${typeWord}" no campo abaixo:`;
+    typeInput.value='';
+    typeInput.placeholder=typeWord;
+    typeInput.dataset.word=typeWord;
+    okBtn.disabled=true;
+    okBtn.style.opacity='.4';
+  } else {
+    typeRow.style.display='none';
+    okBtn.disabled=false;
+    okBtn.style.opacity='1';
+  }
+  okBtn.onclick=()=>{
     closeModal('modal-confirm');
+    typeInput.value='';
     if(arg) window[fn](arg);
     else window[fn]();
   };
   openModal('modal-confirm');
+}
+
+function onConfirmType(input){
+  const ok=input.value.trim().toUpperCase()===input.dataset.word;
+  const btn=document.getElementById('confirm-ok');
+  btn.disabled=!ok;
+  btn.style.opacity=ok?'1':'.4';
 }
 
 // ══════════════════════════════════════════════════════════
