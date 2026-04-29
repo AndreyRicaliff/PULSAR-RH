@@ -1,40 +1,25 @@
-# AG People Analytics v2 — Setup & Deploy
-
-## Estrutura de arquivos
-
-```
-ag-rh/
-├── index.html        # Login (admin + cliente)
-├── app.html          # Aplicação principal
-├── responder.html    # Formulário público de pesquisa
-├── config.js         # Configurações centrais
-├── schema.sql        # Schema do banco de dados
-├── .gitignore
-├── README.md
-└── SETUP.md          # Este arquivo
-```
+# PULSAR RH — Guia de Setup e Deploy
 
 ---
 
-## 1. Criar projeto no Supabase
+## 1. Supabase — Criar Projeto
 
-1. Acesse https://supabase.com e faça login
-2. Clique em **New Project**
-3. Nome: `ag-rh-analytics`, região: `South America (São Paulo)`, senha forte
-4. Aguarde inicializar (~2 min)
+1. Acesse https://supabase.com → **New Project**
+2. Nome: `pulsar-rh`, região: **South America (São Paulo)**
+3. Aguarde inicializar (~2 min)
 
 ---
 
-## 2. Criar o schema do banco
+## 2. Criar Schema e RLS
 
 1. Supabase → **SQL Editor**
-2. Cole todo o conteúdo de `schema.sql`
+2. Cole o conteúdo de **`supabase-schema.sql`** (não use `schema.sql` — obsoleto)
 3. Clique em **Run** (F5)
-4. Confirme as tabelas em **Table Editor**
+4. Confirme as 9 tabelas em **Table Editor**
 
 ---
 
-## 3. Configurar credenciais em `config.js`
+## 3. Configurar Credenciais
 
 1. Supabase → **Settings → API**
 2. Copie **Project URL** e **anon public key**
@@ -43,54 +28,38 @@ ag-rh/
 ```js
 const SUPABASE_URL  = 'https://SEU_PROJECT_ID.supabase.co';
 const SUPABASE_ANON = 'sua-chave-anon-aqui';
+const ADMIN_EMAIL   = 'seu@email.com';
 ```
 
-4. `OFFLINE_MODE` mudará automaticamente para `false`
+`OFFLINE_MODE` muda automaticamente para `false` quando a URL não contém `SEU_PROJECT`.
 
 ---
 
-## 4. Configurar RLS (Row Level Security)
+## 4. Criar Usuário Admin no Supabase Auth
 
-Execute no SQL Editor para o MVP:
-
-```sql
--- Leitura anônima para pesquisas públicas
-CREATE POLICY "anon_read_clients"    ON clients    FOR SELECT USING (true);
-CREATE POLICY "anon_insert_response" ON survey_responses FOR INSERT WITH CHECK (true);
-CREATE POLICY "anon_insert_answer"   ON question_answers  FOR INSERT WITH CHECK (true);
-CREATE POLICY "anon_read_surveys"    ON surveys    FOR SELECT USING (true);
-CREATE POLICY "anon_read_questions"  ON survey_questions FOR SELECT USING (true);
-```
-
-> Em produção, substitua por políticas baseadas em `auth.uid()` do Supabase Auth.
+1. Supabase → **Authentication → Users → Add User**
+2. E-mail: mesmo valor de `ADMIN_EMAIL` em `config.js`
+3. Senha forte → **Create User**
 
 ---
 
-## 5. Publicar
+## 5. Configurar Template de E-mail (Magic Link)
 
-### Opção A — Vercel (recomendado)
-1. Faça `git push` do repositório
-2. Acesse https://vercel.com → **Import**
-3. Selecione o repositório → **Deploy**
-4. URL automática: `https://ag-rh.vercel.app`
-5. Adicione domínio: `rh.agconsultorialtda.com`
-
-### Opção B — GitHub Pages (gratuito)
-1. Repositório no GitHub → **Settings → Pages**
-2. Branch: `main`, pasta: `/`
-3. URL: `https://seuuser.github.io/ag-rh/`
-
-### Opção C — cPanel / Hospedagem
-1. Gerenciador de arquivos → `public_html/rh/`
-2. Upload dos 6 arquivos
-3. URL: `https://agconsultorialtda.com/rh/`
+1. Supabase → **Authentication → Email Templates → Magic Link**
+2. Cole o conteúdo de `email-template-magic-link.html` no campo **Body**
+3. Subject: `Seu acesso ao PULSAR RH`
+4. **Save**
 
 ---
 
-## 6. Configurar domínio customizado
+## 6. Deploy no Vercel
 
-No provedor de DNS (Registro.br, Cloudflare):
+1. `git push` para o repositório
+2. https://vercel.com → **Import** → selecione o repositório
+3. **Deploy** (zero configuração — `vercel.json` já está configurado)
+4. Domínio customizado → **Settings → Domains** → `rh.agconsultorialtda.com`
 
+No DNS (Cloudflare / Registro.br):
 ```
 Tipo:  CNAME
 Nome:  rh
@@ -98,72 +67,63 @@ Valor: cname.vercel-dns.com
 TTL:   3600
 ```
 
-Resultado: `https://rh.agconsultorialtda.com`
+---
+
+## 7. Configurar API Claude (IA)
+
+A chave Claude **não vai em código** — configure direto no painel:
+
+1. https://console.anthropic.com → **API Keys → Create Key**
+2. No PULSAR RH: menu **Agente IA → ⚙️ Config. API** → cole `sk-ant-...`
 
 ---
 
-## 7. Configurar API Claude (Insights IA e Agente)
+## 8. Enviar Acesso ao Primeiro Cliente
 
-A chave Claude é configurada diretamente no painel — não vai em código:
-
-1. Acesse https://console.anthropic.com → **API Keys**
-2. Crie uma chave `sk-ant-...`
-3. No sistema: **menu Agente IA → ⚙️ Config. API** → cole a chave
-4. A chave fica salva no localStorage do navegador admin
-
-> Para produção com múltiplos admins, crie um endpoint proxy seguro no backend.
+1. Crie o cliente em **Clientes → + Novo Cliente** (marque "Enviar convite")
+2. O cliente recebe um magic link por e-mail → clica → cai em `/client`
+3. No portal do cliente: visão read-only dos dados cadastrados pelo admin
 
 ---
 
-## 8. Alterar senha do admin
+## Fluxo Completo
 
-Edite `index.html` linha 71:
-```js
-const ADMIN_EMAIL    = 'seu@email.com';
-const ADMIN_PASS     = 'sua-senha-segura';
+```
+Admin cria cliente → Admin cria pesquisa → Copia link público →
+Envia link para colaboradores → Colaboradores respondem (/responder?token=...) →
+Respostas gravadas no Supabase → Admin vê resultados em /app →
+Cliente vê resultados read-only em /client →
+Admin cria planos de ação → Cliente acompanha kanban em /client
 ```
 
-E `config.js`:
-```js
-const ADMIN_EMAIL    = 'seu@email.com';
-const ADMIN_PASSWORD = 'sua-senha-segura';
-```
+---
+
+## URLs do Sistema
+
+| URL | Quem acessa |
+|-----|-------------|
+| `/` | Tela de login |
+| `/app` | Admin (AG Consultoria) — redireciona cliente para /client |
+| `/client` | Portal do cliente — redireciona admin para /app |
+| `/responder?token=TOKEN` | Colaboradores (anônimo) |
 
 ---
 
-## Credenciais padrão (demo / offline)
+## Variáveis em `config.js`
 
-| Tipo    | E-mail                   | Senha  |
-|---------|--------------------------|--------|
-| Admin   | admin@agconsultoria.com  | 123456 |
-| Cliente | rh@tech.com              | rh123  |
-| Cliente | rh@varejo.com            | rh456  |
-| Cliente | rh@saude.com             | rh789  |
-
----
-
-## Links de pesquisa (demo)
-
-| Empresa         | Token          | URL                               |
-|----------------|----------------|----------------------------------|
-| Tech Solutions  | tok-cli1-clim  | `responder.html?token=tok-cli1-clim` |
-| Varejo Nordeste | tok-cli2-eng   | `responder.html?token=tok-cli2-eng`  |
-| Clínica Saúde   | tok-cli3-nr1   | `responder.html?token=tok-cli3-nr1`  |
-
----
-
-## Notas importantes para produção
-
-1. **Autenticação:** O sistema usa `sessionStorage` (MVP). Para produção real, migre para Supabase Auth
-2. **Senhas:** Atualmente em plain text no localStorage. Em produção, use hash (bcrypt) e Supabase Auth
-3. **Claude API:** Chamadas diretas do browser expõem a key no frontend — use proxy backend em produção multi-usuário
-4. **Tabelas faltantes no schema:** `indicators` (absenteísmo/turnover) e `nr1_risks` são gerenciadas via localStorage no MVP. Adicione ao schema conforme necessidade de produção
-5. **CORS:** A API da Anthropic aceita chamadas diretas do browser com o header `anthropic-dangerous-direct-browser-access: true`
+| Variável | Descrição |
+|----------|-----------|
+| `SUPABASE_URL` | URL do projeto Supabase |
+| `SUPABASE_ANON` | Chave anon pública (segura para expor no frontend + RLS) |
+| `OFFLINE_MODE` | Auto: `true` se URL contém `SEU_PROJECT` |
+| `ADMIN_EMAIL` | E-mail do admin — identifica papel após login |
+| `DEMO_ADMIN_EMAIL` | Credencial apenas para modo offline (demo) |
+| `DEMO_ADMIN_PASSWORD` | Senha apenas para modo offline (demo) |
 
 ---
 
 ## Suporte
 
-📧 suporte@agconsultorialtda.com  
-🌐 agconsultorialtda.com  
+📧 suporte@agconsultorialtda.com
+🌐 agconsultorialtda.com
 📲 (55) 9 8615-7028

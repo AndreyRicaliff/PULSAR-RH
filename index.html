@@ -177,7 +177,9 @@ function getSB(){
   const sb = getSB();
   if(!sb) return;
   const {data:{session}} = await sb.auth.getSession();
-  if(session) window.location.href = '/app';
+  if(!session) return;
+  const email = session.user.email.toLowerCase();
+  window.location.href = (email === ADMIN_EMAIL.toLowerCase()) ? '/app' : '/client';
 })();
 
 // ── Tabs ────────────────────────────────────────────────────
@@ -251,7 +253,7 @@ async function sendMagicLink(){
     btn.querySelector('span').textContent = 'Enviando...';
     const {error} = await sb.auth.signInWithOtp({
       email,
-      options:{ emailRedirectTo: window.location.origin+'/app' }
+      options:{ emailRedirectTo: window.location.origin+'/client' }
     });
     btn.disabled = false;
     btn.querySelector('span').textContent = 'Receber link de acesso';
@@ -266,7 +268,7 @@ async function sendMagicLink(){
       sessionStorage.setItem('ag_role','client');
       sessionStorage.setItem('ag_client_id',c.id);
       sessionStorage.setItem('ag_user',c.name);
-      window.location.href = '/app';
+      window.location.href = '/client';
       return;
     }
     const stored = JSON.parse(localStorage.getItem('ag_clients')||'[]');
@@ -277,7 +279,7 @@ async function sendMagicLink(){
     sessionStorage.setItem('ag_role','client');
     sessionStorage.setItem('ag_client_id',c.id);
     sessionStorage.setItem('ag_user',c.name);
-    window.location.href = '/app';
+    window.location.href = '/client';
     return;
   }
 
@@ -310,7 +312,7 @@ async function resendLink(){
   if(sb){
     await sb.auth.signInWithOtp({
       email: sentEmail,
-      options:{ emailRedirectTo: window.location.origin+'/app' }
+      options:{ emailRedirectTo: window.location.origin+'/client' }
     });
   }
   startResendTimer();

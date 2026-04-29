@@ -891,6 +891,20 @@ function getSurveyById(id){ return getData('surveys').find(s=>s.id===id) }
 function getClaudeKey(){ return localStorage.getItem('ag_claude_key')||'' }
 function setClaudeKey(k){ localStorage.setItem('ag_claude_key',k) }
 
+// ── SUPABASE SYNC HELPERS ─────────────────────────────────
+async function syncSB(table, obj){
+  const sb=getSB(); if(!sb) return;
+  try{ await sb.from(table).upsert(obj,{onConflict:'id'}); }catch(e){ console.warn('syncSB',table,e); }
+}
+async function deleteSB(table, id){
+  const sb=getSB(); if(!sb) return;
+  try{ await sb.from(table).delete().eq('id',id); }catch(e){ console.warn('deleteSB',table,e); }
+}
+async function deleteSBWhere(table, col, val){
+  const sb=getSB(); if(!sb) return;
+  try{ await sb.from(table).delete().eq(col,val); }catch(e){ console.warn('deleteSBWhere',table,e); }
+}
+
 // ══════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════
@@ -2211,7 +2225,9 @@ function saveIndicator(){
   const exits=parseInt(document.getElementById('ind-exits').value)||0;
   const admits=parseInt(document.getElementById('ind-admits').value)||0;
   if(!clientId||!month||!hc||!days){notify('Preencha empresa, mês, HC e dias úteis.','error');return}
-  addItem('indicators',{id:uid(),client_id:clientId,month,headcount:hc,working_days:days,absenteeism_days:abs,turnover_exits:exits,admissions:admits});
+  const indObj={id:uid(),client_id:clientId,month,headcount:hc,working_days:days,absenteeism_days:abs,turnover_exits:exits,admissions:admits};
+  addItem('indicators',indObj);
+  syncSB('indicators',indObj);
   closeModal('modal-indicator');
   notify('Indicadores lançados!','success');
   renderPage('indicadores');
@@ -2228,7 +2244,9 @@ function saveNR1Risk(){
   const severity=parseInt(document.getElementById('nr1-sev').value);
   const notes=document.getElementById('nr1-notes').value.trim();
   if(!clientId||!factor){notify('Preencha empresa e fator de risco.','error');return}
-  addItem('nr1risks',{id:uid(),client_id:clientId,area,factor,probability,severity,notes,created_at:new Date().toISOString()});
+  const nr1Obj={id:uid(),client_id:clientId,area,factor,probability,severity,notes,created_at:new Date().toISOString()};
+  addItem('nr1risks',nr1Obj);
+  syncSB('nr1risks',nr1Obj);
   closeModal('modal-nr1risk');
   notify('Risco NR-1 cadastrado!','success');
   renderPage('matrizes');
@@ -2236,6 +2254,7 @@ function saveNR1Risk(){
 
 function deleteNR1Risk(id){
   setData('nr1risks',getData('nr1risks').filter(r=>r.id!==id));
+  deleteSB('nr1risks',id);
   notify('Risco removido.','info');
   renderPage('matrizes');
 }
@@ -2294,15 +2313,7 @@ function renderClients(){
     </tr>`).join(''):
     `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">${all.length?'Nenhum cliente corresponde aos filtros.':'Nenhum cliente cadastrado ainda.'}</td></tr>`}
     </tbody>
-  </table></div>
-  <div class="danger-zone">
-    <h3>🚨 Zona de Perigo</h3>
-    <p>As ações abaixo são irreversíveis. Os dados apagados não podem ser recuperados. Proceda com extremo cuidado.</p>
-    <div class="danger-zone-actions">
-      <button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.3)" onclick="confirmAction('Zerar dados operacionais?','Apagará TODAS as respostas, pesquisas, colaboradores, indicadores e planos de ação de TODAS as empresas. Clientes cadastrados serão mantidos.','resetAllData','','ZERAR')">🗑 Zerar Dados de Pesquisas</button>
-      <button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.3)" onclick="confirmAction('Zerar tudo incluindo clientes?','Apagará TODOS os dados incluindo clientes cadastrados. O sistema voltará ao estado inicial com dados de demonstração.','resetEverything','','REINICIAR')">⚠️ Reiniciar Sistema Completo</button>
-    </div>
-  </div>`;
+  </table></div>`;
 }
 
 async function sendClientAccess(clientId){
@@ -2319,7 +2330,7 @@ async function sendClientAccess(clientId){
   notify('Enviando link de acesso...','info');
   const {error}=await sb.auth.signInWithOtp({
     email: c.email,
-    options:{ emailRedirectTo: window.location.origin+'/app' }
+    options:{ emailRedirectTo: window.location.origin+'/client' }
   });
 
   if(error){
@@ -2352,6 +2363,7 @@ function deleteClient(id){
   setData('responses',getData('responses').filter(r=>r.client_id!==id));
   setData('answers',getData('answers').filter(a=>a.client_id!==id));
   setData('actions',getData('actions').filter(a=>a.client_id!==id));
+  deleteSB('clients',id);
   populateCompanySelect();
   if(state.selectedCompany===id) state.selectedCompany='all';
   notify('Cliente apagado com sucesso.','success');
@@ -2387,6 +2399,7 @@ function deleteSurvey(id){
   setData('survey_questions',getData('survey_questions').filter(q=>q.survey_id!==id));
   setData('responses',getData('responses').filter(r=>r.survey_id!==id));
   setData('answers',getData('answers').filter(a=>a.survey_id!==id));
+  deleteSB('surveys',id);
   notify('Pesquisa apagada.','success');
   renderPage('surveys');
 }
@@ -2394,7 +2407,7 @@ function deleteSurvey(id){
 function changeSurveyStatus(id,status){
   const survs=getData('surveys');
   const idx=survs.findIndex(s=>s.id===id);
-  if(idx>=0){survs[idx].status=status;setData('surveys',survs)}
+  if(idx>=0){survs[idx].status=status;setData('surveys',survs);syncSB('surveys',survs[idx]);}
   const labels={ativa:'Pesquisa ativada',concluida:'Pesquisa concluída',pausada:'Pesquisa pausada'};
   notify(labels[status]||'Status atualizado.','success');
   renderPage('surveys');
@@ -2560,19 +2573,23 @@ function saveSurvey(){
   const surveyId=uid();
   const survey={id:surveyId,client_id:clientId,title,type,period,status:'ativa',total_invited:0,public_token:token,deadline,description:desc,created_at:new Date().toISOString()};
   addItem('surveys',survey);
+  syncSB('surveys',survey);
 
   // Save standard questions
   const questions=getData('survey_questions');
   let qOrder=0;
+  const newQs=[];
   if(stdQsOn){
     (STD_QUESTIONS[type]||[]).forEach(q=>{
-      questions.push({id:uid(),survey_id:surveyId,client_id:clientId,...q,order_num:qOrder++,is_custom:false,weight:1});
+      const qObj={id:uid(),survey_id:surveyId,client_id:clientId,...q,order_num:qOrder++,is_custom:false,weight:1};
+      questions.push(qObj); newQs.push(qObj);
     });
   }
   state.customQuestions.forEach(q=>{
-    if(q.text) questions.push({id:uid(),survey_id:surveyId,client_id:clientId,...q,order_num:qOrder++,is_custom:true,weight:1});
+    if(q.text){const qObj={id:uid(),survey_id:surveyId,client_id:clientId,...q,order_num:qOrder++,is_custom:true,weight:1};questions.push(qObj);newQs.push(qObj);}
   });
   setData('survey_questions',questions);
+  newQs.forEach(q=>syncSB('survey_questions',q));
 
   closeModal('modal-survey');
   state.customQuestions=[];
@@ -2587,7 +2604,7 @@ function saveCollab(){
   const name=document.getElementById('c-name').value.trim();
   const clientId=document.getElementById('c-client').value;
   if(!name||!clientId){notify('Preencha nome e empresa.','error');return}
-  addItem('collaborators',{
+  const collabObj={
     id:uid(),client_id:clientId,name,
     email:document.getElementById('c-email').value,
     role:document.getElementById('c-role').value,
@@ -2596,7 +2613,9 @@ function saveCollab(){
     salary:parseFloat(document.getElementById('c-salary').value)||0,
     admission_date:document.getElementById('c-admission').value,
     status:'ativo'
-  });
+  };
+  addItem('collaborators',collabObj);
+  syncSB('collaborators',collabObj);
   closeModal('modal-collab');
   notify(`Colaborador "${name}" adicionado!`,'success');
   renderPage('collaborators');
@@ -2609,7 +2628,7 @@ function saveAction(){
   const title=document.getElementById('a-title').value.trim();
   const clientId=document.getElementById('a-client').value;
   if(!title||!clientId){notify('Preencha título e empresa.','error');return}
-  addItem('actions',{
+  const actionObj={
     id:uid(),client_id:clientId,title,
     area:document.getElementById('a-area').value,
     priority:document.getElementById('a-priority').value,
@@ -2618,7 +2637,9 @@ function saveAction(){
     status:document.getElementById('a-status').value,
     description:document.getElementById('a-desc').value,
     created_at:new Date().toISOString()
-  });
+  };
+  addItem('actions',actionObj);
+  syncSB('actions',actionObj);
   closeModal('modal-action');
   notify(`Plano "${title}" criado!`,'success');
   renderPage('actions');
@@ -2679,13 +2700,15 @@ function saveClient(){
   if(editId){
     const all=getData('clients');
     const idx=all.findIndex(c=>c.id===editId);
-    if(idx>=0){ all[idx]={...all[idx],...obj}; setData('clients',all); }
+    if(idx>=0){ all[idx]={...all[idx],...obj}; setData('clients',all); syncSB('clients',all[idx]); }
     populateCompanySelect();
     closeModal('modal-client');
     notify(`Cliente "${name}" atualizado!`,'success');
   } else {
     const id=uid();
-    addItem('clients',{id,...obj,created_at:new Date().toISOString()});
+    const newClient={id,...obj,created_at:new Date().toISOString()};
+    addItem('clients',newClient);
+    syncSB('clients',newClient);
     const sendInvite=document.getElementById('cl-invite').checked;
     populateCompanySelect();
     closeModal('modal-client');
@@ -2701,6 +2724,7 @@ function toggleClientStatus(id){
   if(idx<0) return;
   all[idx].status=all[idx].status==='ativo'?'inativo':'ativo';
   setData('clients',all);
+  syncSB('clients',all[idx]);
   renderPage('clients');
 }
 
@@ -2775,17 +2799,14 @@ function saveProfile(){
   const email = session.user.email.toLowerCase();
   const isAdmin = email === ADMIN_EMAIL.toLowerCase();
 
-  if(isAdmin){
-    state.role = 'admin';
-    state.user = 'AG Consultoria';
-  } else {
-    state.role = 'client';
-    state.user = email;
-    const clients = getClients();
-    const c = clients.find(x=>x.email&&x.email.toLowerCase()===email);
-    state.clientId = c?.id || null;
-    if(c) state.user = c.name;
+  if(!isAdmin){
+    // Clientes pertencem ao portal /client, não ao painel admin
+    window.location.href = '/client';
+    return;
   }
+
+  state.role = 'admin';
+  state.user = 'AG Consultoria';
 
   // Escuta mudanças (captura callback do magic link)
   sb.auth.onAuthStateChange((event, s)=>{

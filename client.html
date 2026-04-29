@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PULSAR RH — Portal do Cliente</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#3662FF;--secondary:#5E7FFF;--accent:#08C16A;
+  --bg:#0A0F1A;--surface:#0F1829;--surface2:#182236;--border:#1A2D47;
+  --text:#E8EEFF;--muted:#7A9BC4;--danger:#FF5C5C;--orange:#FFBC7D;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:58px;display:flex;align-items:center;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:100}
+.topbar-logo{display:flex;align-items:center;gap:10px}
+.topbar-logo span{font-size:15px;font-weight:800;letter-spacing:.5px;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.topbar-company{font-size:13px;font-weight:600;color:var(--text);padding:4px 12px;background:rgba(54,98,255,.1);border:1px solid rgba(54,98,255,.2);border-radius:20px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.topbar-ag{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.topbar-ag img{height:14px;filter:brightness(0) invert(1);opacity:.5}
+.logout-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:6px 12px;color:var(--muted);font-family:inherit;font-size:12px;cursor:pointer;transition:.2s}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger)}
+
+/* TAB NAV */
+.tab-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:4px;overflow-x:auto;flex-shrink:0}
+.tab-btn{padding:12px 18px;border:none;background:none;color:var(--muted);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.15s}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+
+/* CONTENT */
+.content{flex:1;padding:28px 24px;max-width:1200px;width:100%;margin:0 auto}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:28px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}
+.kpi-card.blue::before{background:var(--primary)}
+.kpi-card.purple::before{background:var(--secondary)}
+.kpi-card.orange::before{background:var(--orange)}
+.kpi-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.kpi-value{font-size:28px;font-weight:700;line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.kpi-icon{position:absolute;top:14px;right:14px;font-size:22px;opacity:.18}
+
+/* SURVEY CARDS */
+.survey-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:28px}
+.s-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;transition:.2s}
+.s-card:hover{border-color:var(--primary)}
+.s-card-type{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--primary);margin-bottom:6px}
+.s-card h3{font-size:15px;font-weight:600;margin-bottom:6px}
+.s-card p{font-size:12px;color:var(--muted);margin-bottom:14px}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-green{background:rgba(8,193,106,.15);color:var(--accent)}
+.badge-blue{background:rgba(54,98,255,.15);color:var(--primary)}
+.badge-orange{background:rgba(255,188,125,.15);color:var(--orange)}
+.badge-gray{background:var(--surface2);color:var(--muted)}
+.btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;transition:.2s}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{opacity:.9}
+.btn-secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.btn-secondary:hover{border-color:var(--primary);color:var(--primary)}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* TABLE */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface2)}
+th{padding:11px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+td{padding:12px 16px;font-size:13px;border-top:1px solid var(--border)}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+/* SECTION HEADER */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-header h2{font-size:16px;font-weight:600}
+
+/* RESULTS */
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.result-card h3{font-size:15px;font-weight:600;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.dim-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.dim-label{font-size:12px;color:var(--muted);width:130px;flex-shrink:0;text-transform:capitalize}
+.dim-bar{flex:1;background:var(--surface2);border-radius:4px;height:8px;overflow:hidden}
+.dim-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--primary),var(--secondary));transition:width .5s}
+.dim-score{font-size:13px;font-weight:600;width:32px;text-align:right;flex-shrink:0}
+
+/* KANBAN */
+.kanban-board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.kanban-col{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.kanban-col-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.kanban-col-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.kanban-col-count{font-size:12px;color:var(--muted)}
+.kanban-col-body{padding:12px;display:flex;flex-direction:column;gap:10px;min-height:60px}
+.kanban-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
+.kanban-card h4{font-size:13px;font-weight:600;margin-bottom:6px}
+.kanban-card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.kanban-card-empty{text-align:center;padding:20px;color:var(--muted);font-size:12px}
+
+/* INDICATOR CARDS */
+.ind-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.ind-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center}
+.ind-val{font-size:38px;font-weight:900;line-height:1;margin:8px 0}
+.ind-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.ind-sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* CHART */
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px}
+.chart-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:16px}
+.chart-wrap{position:relative;height:200px}
+
+/* EMPTY / ERROR */
+.empty{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty h3{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
+.empty p{font-size:13px;line-height:1.5}
+.error-box{background:rgba(255,92,92,.08);border:1px solid rgba(255,92,92,.25);border-radius:12px;padding:20px;margin-bottom:20px;font-size:13px;color:var(--danger);line-height:1.6}
+
+/* LOADING */
+#loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000}
+#loading-overlay.hidden{display:none}
+.loader-logo{font-size:20px;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px}
+.loader-bar{width:200px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.loader-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:2px;animation:load 1.4s ease-in-out infinite}
+@keyframes load{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
+
+/* FOOTER */
+.portal-footer{padding:16px 24px;text-align:center;border-top:1px solid var(--border);margin-top:auto}
+.portal-footer img{height:14px;filter:brightness(0) invert(1);opacity:.4;display:inline-block;vertical-align:middle;margin-right:6px}
+.portal-footer span{font-size:11px;color:var(--muted);background:linear-gradient(90deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:500}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading-overlay">
+  <div class="loader-logo">PULSAR RH</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+  <p style="margin-top:14px;font-size:12px;color:var(--muted)">Carregando seus dados...</p>
+</div>
+
+<!-- Topbar -->
+<header class="topbar">
+  <div class="topbar-logo">
+    <img src="/favicon.svg" style="width:28px;height:28px;border-radius:7px"/>
+    <span>PULSAR RH</span>
+  </div>
+  <div class="topbar-company" id="company-name">—</div>
+  <div class="topbar-right">
+    <div class="topbar-ag">
+      <img src="/ag-logo.png" alt="AG Consultoria"/>
+      AG Consultoria
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Sair</button>
+  </div>
+</header>
+
+<!-- Tab navigation -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('overview',this)">📊 Visão Geral</button>
+  <button class="tab-btn" onclick="switchTab('surveys',this)">📋 Pesquisas</button>
+  <button class="tab-btn" onclick="switchTab('results',this)">🎯 Resultados</button>
+  <button class="tab-btn" onclick="switchTab('actions',this)">✅ Planos de Ação</button>
+  <button class="tab-btn" onclick="switchTab('indicators',this)">📈 Indicadores</button>
+</nav>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- VISÃO GERAL -->
+  <div class="tab-panel active" id="tab-overview">
+    <div id="overview-content">
+      <div class="empty"><div class="empty-icon">⏳</div><h3>Carregando...</h3></div>
+    </div>
+  </div>
+
+  <!-- PESQUISAS -->
+  <div class="tab-panel" id="tab-surveys">
+    <div id="surveys-content">
+      <div class="empty"><div class="empty-icon">⏳</div><h3>Carregando...</h3></div>
+    </div>
+  </div>
+
+  <!-- RESULTADOS -->
+  <div class="tab-panel" id="tab-results">
+    <div id="results-content">
+      <div class="empty"><div class="empty-icon">⏳</div><h3>Carregando...</h3></div>
+    </div>
+  </div>
+
+  <!-- PLANOS DE AÇÃO -->
+  <div class="tab-panel" id="tab-actions">
+    <div id="actions-content">
+      <div class="empty"><div class="empty-icon">⏳</div><h3>Carregando...</h3></div>
+    </div>
+  </div>
+
+  <!-- INDICADORES -->
+  <div class="tab-panel" id="tab-indicators">
+    <div id="indicators-content">
+      <div class="empty"><div class="empty-icon">⏳</div><h3>Carregando...</h3></div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="portal-footer">
+  <img src="/ag-logo.png" alt="AG Consultoria"/>
+  <span>Muito além da contabilidade</span>
+</footer>
+
+<script>
+// ── Supabase ─────────────────────────────────────────────────
+let _sb=null;
+function getSB(){
+  if(_sb) return _sb;
+  if(typeof supabase!=='undefined'&&typeof SUPABASE_URL!=='undefined'&&!OFFLINE_MODE)
+    _sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+  return _sb;
+}
+
+// ── State ─────────────────────────────────────────────────────
+const S={client:null,surveys:[],responses:[],answers:[],actions:[],indicators:[]};
+
+// ── Tab switching ─────────────────────────────────────────────
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Logout ───────────────────────────────────────────────────
+async function doLogout(){
+  const sb=getSB();
+  if(sb) await sb.auth.signOut();
+  window.location.href='/';
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+const SURVEY_LABELS={clima:'Clima Organizacional',engajamento:'Engajamento / eNPS','360':'Avaliação 360°','180':'Avaliação 180°',lideranca:'Liderança',felicidade:'Felicidade no Trabalho',nr1:'NR-1 / Saúde Mental',onboarding:'Onboarding',desligamento:'Desligamento',saude:'Saúde Geral'};
+const STATUS_BADGE={ativa:'badge-green',concluida:'badge-blue',pausada:'badge-orange'};
+const STATUS_LABEL={ativa:'Ativa',concluida:'Concluída',pausada:'Pausada'};
+
+function destroyChart(id){const e=Chart.getChart(id);if(e)e.destroy();}
+
+// ── RENDER OVERVIEW ─────────────────────────────────────────
+function renderOverview(){
+  const surveys=S.surveys;
+  const responses=S.responses;
+  const answers=S.answers;
+  const indicators=[...S.indicators].sort((a,b)=>a.month.localeCompare(b.month));
+  const last=indicators[indicators.length-1];
+
+  const active=surveys.filter(s=>s.status==='ativa').length;
+  const scores=responses.map(r=>r.overall_score).filter(v=>v!=null);
+  const avg=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):null;
+  const npsVals=answers.filter(a=>a.dimension==='nps'&&a.numeric_value!=null);
+  const prom=npsVals.filter(a=>a.numeric_value>=9).length;
+  const detr=npsVals.filter(a=>a.numeric_value<=6).length;
+  const enps=npsVals.length?Math.round((prom/npsVals.length-detr/npsVals.length)*100):null;
+  const tv=last?(((last.turnover_exits+last.admissions)/2/last.headcount)*100).toFixed(1):null;
+
+  const activeSurveys=surveys.filter(s=>s.status==='ativa');
+
+  document.getElementById('overview-content').innerHTML=`
+  <div style="margin-bottom:24px">
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">Olá, ${S.client.name}!</h2>
+    <p style="font-size:13px;color:var(--muted)">Aqui estão os dados mais recentes da sua empresa no PULSAR RH.</p>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-icon">📋</div>
+      <div class="kpi-label">Pesquisas Ativas</div>
+      <div class="kpi-value" style="color:var(--primary)">${active}</div>
+      <div class="kpi-sub">em andamento</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">⭐</div>
+      <div class="kpi-label">Score Médio</div>
+      <div class="kpi-value" style="color:${avg>=7?'var(--accent)':avg>=5?'var(--orange)':'var(--danger)'}">${avg??'—'}</div>
+      <div class="kpi-sub">de 10 pontos</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-icon">🎯</div>
+      <div class="kpi-label">eNPS</div>
+      <div class="kpi-value" style="color:${enps>=50?'var(--accent)':enps>=0?'var(--secondary)':'var(--danger)'}">${enps??'—'}</div>
+      <div class="kpi-sub">${enps!=null?(enps>=50?'Excelente':enps>=0?'Neutro':'Crítico'):'Sem dados'}</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-icon">🔄</div>
+      <div class="kpi-label">Turnover Mensal</div>
+      <div class="kpi-value" style="color:${tv?(tv>5?'var(--danger)':tv>3?'var(--orange)':'var(--accent)'):'var(--muted)'}">${tv??'—'}${tv?'%':''}</div>
+      <div class="kpi-sub">${tv?(tv>5?'Alto':'Controlado'):'Sem dados'}</div>
+    </div>
+  </div>
+  ${activeSurveys.length?`
+  <div class="section-header"><h2>Pesquisas Abertas para Participação</h2></div>
+  <div class="survey-grid">${activeSurveys.map(s=>`
+    <div class="s-card">
+      <div class="s-card-type">${SURVEY_LABELS[s.type]||s.type}</div>
+      <h3>${s.title}</h3>
+      <p>${s.deadline?`Prazo: ${s.deadline}`:'Sem prazo definido'}</p>
+      <button class="btn btn-primary btn-sm" onclick="window.open('${window.location.origin}/responder?token=${s.public_token}','_blank')">Participar →</button>
+    </div>`).join('')}
+  </div>`:
+  `<div style="background:rgba(54,98,255,.06);border:1px solid rgba(54,98,255,.15);border-radius:10px;padding:16px;font-size:13px;color:var(--muted)">
+    Nenhuma pesquisa ativa no momento. A AG Consultoria entrará em contato quando uma nova pesquisa for aberta.
+  </div>`}`;
+}
+
+// ── RENDER SURVEYS ───────────────────────────────────────────
+function renderSurveys(){
+  const surveys=S.surveys;
+  if(!surveys.length){
+    document.getElementById('surveys-content').innerHTML=`<div class="empty"><div class="empty-icon">📋</div><h3>Nenhuma pesquisa</h3><p>Suas pesquisas aparecerão aqui quando a AG Consultoria criar uma para sua empresa.</p></div>`;
+    return;
+  }
+  document.getElementById('surveys-content').innerHTML=`
+  <div class="section-header"><h2>Suas Pesquisas (${surveys.length})</h2></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Pesquisa</th><th>Tipo</th><th>Periodicidade</th><th>Prazo</th><th>Status</th><th>Ação</th></tr></thead>
+    <tbody>${surveys.map(s=>`<tr>
+      <td><strong>${s.title}</strong></td>
+      <td style="font-size:12px;color:var(--muted)">${SURVEY_LABELS[s.type]||s.type}</td>
+      <td style="font-size:12px">${s.period||'Pontual'}</td>
+      <td style="font-size:12px;color:var(--muted)">${s.deadline||'—'}</td>
+      <td><span class="badge ${STATUS_BADGE[s.status]||'badge-gray'}">${STATUS_LABEL[s.status]||s.status}</span></td>
+      <td>${s.status==='ativa'?`<button class="btn btn-primary btn-sm" onclick="window.open('${window.location.origin}/responder?token=${s.public_token}','_blank')">Participar →</button>`:`<span style="font-size:12px;color:var(--muted)">${s.status==='concluida'?'Encerrada':'Pausada'}</span>`}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+// ── RENDER RESULTS ───────────────────────────────────────────
+function renderResults(){
+  const surveys=S.surveys;
+  const responses=S.responses;
+  const answers=S.answers;
+
+  const withData=surveys.filter(s=>responses.some(r=>r.survey_id===s.id));
+  if(!withData.length){
+    document.getElementById('results-content').innerHTML=`<div class="empty"><div class="empty-icon">🎯</div><h3>Sem resultados ainda</h3><p>Os resultados aparecem aqui após respostas serem coletadas nas pesquisas.</p></div>`;
+    return;
+  }
+
+  let html=`<div class="section-header"><h2>Resultados das Pesquisas</h2></div>`;
+  withData.forEach(s=>{
+    const resps=responses.filter(r=>r.survey_id===s.id);
+    const ans=answers.filter(a=>a.survey_id===s.id);
+    const scores=resps.map(r=>r.overall_score).filter(v=>v!=null);
+    const avg=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):null;
+    const npsVals=ans.filter(a=>a.dimension==='nps'&&a.numeric_value!=null);
+    const prom=npsVals.filter(a=>a.numeric_value>=9).length;
+    const detr=npsVals.filter(a=>a.numeric_value<=6).length;
+    const enps=npsVals.length?Math.round((prom/npsVals.length-detr/npsVals.length)*100):null;
+    const dims=[...new Set(ans.filter(a=>a.dimension&&a.numeric_value!=null&&a.dimension!=='nps').map(a=>a.dimension))];
+
+    html+=`<div class="result-card">
+      <h3>${s.title} <span class="badge ${STATUS_BADGE[s.status]||'badge-gray'}" style="font-size:10px;margin-left:8px">${STATUS_LABEL[s.status]||s.status}</span></h3>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px">
+        <div style="background:var(--surface2);border-radius:8px;padding:12px 18px;text-align:center">
+          <div style="font-size:24px;font-weight:700;color:${avg>=7?'var(--accent)':avg>=5?'var(--orange)':'var(--danger)'}">${avg??'—'}</div>
+          <div style="font-size:11px;color:var(--muted)">Score médio</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:12px 18px;text-align:center">
+          <div style="font-size:24px;font-weight:700;color:var(--accent)">${resps.length}</div>
+          <div style="font-size:11px;color:var(--muted)">Respostas</div>
+        </div>
+        ${enps!=null?`<div style="background:var(--surface2);border-radius:8px;padding:12px 18px;text-align:center">
+          <div style="font-size:24px;font-weight:700;color:${enps>=50?'var(--accent)':enps>=0?'var(--secondary)':'var(--danger)'}">${enps}</div>
+          <div style="font-size:11px;color:var(--muted)">eNPS</div>
+        </div>`:''}
+      </div>
+      ${dims.length?`<div>${dims.map(d=>{
+        const vals=ans.filter(a=>a.dimension===d&&a.numeric_value!=null).map(a=>a.numeric_value);
+        const sc=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):0;
+        return `<div class="dim-row">
+          <div class="dim-label">${d.replace(/_/g,' ')}</div>
+          <div class="dim-bar"><div class="dim-fill" style="width:${parseFloat(sc)*10}%"></div></div>
+          <div class="dim-score">${sc}</div>
+        </div>`;
+      }).join('')}</div>`:'<p style="font-size:13px;color:var(--muted)">Dados de dimensões não disponíveis para esta pesquisa.</p>'}
+    </div>`;
+  });
+
+  document.getElementById('results-content').innerHTML=html;
+}
+
+// ── RENDER ACTIONS ───────────────────────────────────────────
+function renderActions(){
+  const actions=S.actions;
+  if(!actions.length){
+    document.getElementById('actions-content').innerHTML=`<div class="empty"><div class="empty-icon">✅</div><h3>Nenhum plano de ação</h3><p>Os planos de ação criados pela AG Consultoria para sua empresa aparecerão aqui.</p></div>`;
+    return;
+  }
+  const priLabel={alta:'Alta',media:'Média',baixa:'Baixa'};
+  const priBadge={alta:'badge-red',media:'badge-orange',baixa:'badge-green'};
+  const stColor={pendente:'var(--orange)',em_andamento:'var(--primary)',concluido:'var(--accent)'};
+  const stLabel={pendente:'Pendente',em_andamento:'Em Andamento',concluido:'Concluído'};
+  const cols=['pendente','em_andamento','concluido'];
+
+  const kanban=`<div class="section-header"><h2>Planos de Ação (${actions.length})</h2></div>
+  <div class="kanban-board">${cols.map(k=>{
+    const items=actions.filter(a=>a.status===k);
+    return `<div class="kanban-col">
+      <div class="kanban-col-header">
+        <span class="kanban-col-title" style="color:${stColor[k]||'var(--muted)'}">${stLabel[k]}</span>
+        <span class="kanban-col-count">${items.length}</span>
+      </div>
+      <div class="kanban-col-body">
+        ${items.length?items.map(a=>`<div class="kanban-card">
+          <h4>${a.title}</h4>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${a.area||''} ${a.responsible?'· '+a.responsible:''}</div>
+          <div class="kanban-card-meta">
+            <span class="badge ${priBadge[a.priority]||'badge-gray'}">${priLabel[a.priority]||a.priority}</span>
+            ${a.deadline?`<span style="font-size:11px;color:var(--muted)">📅 ${a.deadline}</span>`:''}
+          </div>
+        </div>`).join(''):`<div class="kanban-card-empty">Nenhum plano</div>`}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+
+  document.getElementById('actions-content').innerHTML=kanban;
+}
+
+// ── RENDER INDICATORS ────────────────────────────────────────
+function renderIndicators(){
+  const indicators=[...S.indicators].sort((a,b)=>a.month.localeCompare(b.month));
+  if(!indicators.length){
+    document.getElementById('indicators-content').innerHTML=`<div class="empty"><div class="empty-icon">📈</div><h3>Sem indicadores</h3><p>Os indicadores mensais (absenteísmo, turnover, retenção) serão exibidos aqui conforme lançados pela AG Consultoria.</p></div>`;
+    return;
+  }
+  const last=indicators[indicators.length-1];
+  const prev=indicators[indicators.length-2];
+  const calc=i=>i?{abs:((i.absenteeism_days/(i.headcount*i.working_days))*100).toFixed(1),tv:(((i.turnover_exits+i.admissions)/2/i.headcount)*100).toFixed(1)}:null;
+  const cur=calc(last);
+  const pre=calc(prev);
+  const rt=(100-parseFloat(cur.tv)).toFixed(1);
+
+  let html=`
+  <div class="section-header"><h2>Indicadores de RH</h2></div>
+  <div class="ind-grid">
+    <div class="ind-card">
+      <div class="ind-label">Absenteísmo</div>
+      <div class="ind-val" style="color:${cur.abs>4?'var(--danger)':cur.abs>2?'var(--orange)':'var(--accent)'}">${cur.abs}<span style="font-size:18px">%</span></div>
+      <div class="ind-sub">${cur.abs>4?'⚠️ Acima do benchmark':cur.abs>2?'📊 Moderado':'✅ Saudável'}</div>
+      ${pre?`<div style="font-size:11px;color:var(--muted);margin-top:6px">Anterior: ${pre.abs}%</div>`:''}
+    </div>
+    <div class="ind-card">
+      <div class="ind-label">Turnover Mensal</div>
+      <div class="ind-val" style="color:${cur.tv>5?'var(--danger)':cur.tv>3?'var(--orange)':'var(--accent)'}">${cur.tv}<span style="font-size:18px">%</span></div>
+      <div class="ind-sub">${cur.tv>5?'Alta rotatividade':cur.tv>3?'Atenção':'Controlado'}</div>
+      ${pre?`<div style="font-size:11px;color:var(--muted);margin-top:6px">Anterior: ${pre.tv}%</div>`:''}
+    </div>
+    <div class="ind-card">
+      <div class="ind-label">Taxa de Retenção</div>
+      <div class="ind-val" style="color:${rt>=97?'var(--accent)':rt>=90?'var(--primary)':rt>=85?'var(--orange)':'var(--danger)'}">${rt}<span style="font-size:18px">%</span></div>
+      <div class="ind-sub">${rt>=95?'🏆 Excelente':rt>=90?'Adequada':'⚠️ Atenção'}</div>
+    </div>
+    <div class="ind-card">
+      <div class="ind-label">Headcount</div>
+      <div class="ind-val" style="color:var(--secondary)">${last.headcount}</div>
+      <div class="ind-sub">mês de referência: ${last.month}</div>
+    </div>
+  </div>`;
+
+  if(indicators.length>=2){
+    html+=`<div class="chart-card">
+      <div class="chart-title">Evolução Mensal</div>
+      <div class="chart-wrap"><canvas id="chart-trend"></canvas></div>
+    </div>`;
+  }
+
+  html+=`<div class="section-header" style="margin-top:4px"><h2>Histórico</h2></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Mês</th><th>HC</th><th>Absenteísmo</th><th>Turnover</th><th>Retenção</th></tr></thead>
+    <tbody>${[...indicators].reverse().map(i=>{
+      const d=calc(i);
+      const r=(100-parseFloat(d.tv)).toFixed(1);
+      return `<tr>
+        <td>${i.month}</td><td>${i.headcount}</td>
+        <td style="color:${d.abs>4?'var(--danger)':d.abs>2?'var(--orange)':'var(--accent)'};font-weight:600">${d.abs}%</td>
+        <td style="color:${d.tv>5?'var(--danger)':d.tv>3?'var(--orange)':'var(--accent)'};font-weight:600">${d.tv}%</td>
+        <td style="color:${r<90?'var(--danger)':r<95?'var(--orange)':'var(--accent)'};font-weight:600">${r}%</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+
+  document.getElementById('indicators-content').innerHTML=html;
+
+  if(indicators.length>=2){
+    const labels=indicators.map(i=>i.month);
+    const absData=indicators.map(i=>((i.absenteeism_days/(i.headcount*i.working_days))*100).toFixed(2));
+    const tvData=indicators.map(i=>(((i.turnover_exits+i.admissions)/2/i.headcount)*100).toFixed(2));
+    destroyChart('chart-trend');
+    new Chart(document.getElementById('chart-trend'),{
+      type:'line',
+      data:{labels,datasets:[
+        {label:'Absenteísmo',data:absData,borderColor:'#FF5C5C',backgroundColor:'rgba(255,92,92,.1)',fill:true,tension:.4,borderWidth:2},
+        {label:'Turnover',data:tvData,borderColor:'#FFBC7D',backgroundColor:'rgba(255,188,125,.1)',fill:true,tension:.4,borderWidth:2},
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        scales:{y:{ticks:{color:'#8B9CC0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#8B9CC0'},grid:{display:false}}},
+        plugins:{legend:{labels:{color:'#8B9CC0',font:{size:11}}}}}
+    });
+  }
+}
+
+// ── RENDER ALL ───────────────────────────────────────────────
+function renderAll(){
+  renderOverview();
+  renderSurveys();
+  renderResults();
+  renderActions();
+  renderIndicators();
+}
+
+// ── BOOT ─────────────────────────────────────────────────────
+(async function boot(){
+  const sb=getSB();
+  if(!sb){
+    document.getElementById('loading-overlay').classList.add('hidden');
+    document.getElementById('overview-content').innerHTML=`<div class="error-box">⚠️ Supabase não configurado. Configure o SUPABASE_URL e SUPABASE_ANON no config.js e conecte o projeto.</div>`;
+    return;
+  }
+
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){window.location.href='/';return;}
+
+  const email=session.user.email.toLowerCase();
+
+  // Admin acessando este portal → redireciona para o painel admin
+  if(email===ADMIN_EMAIL.toLowerCase()){window.location.href='/app';return;}
+
+  // Carrega registro do cliente
+  const {data:client,error:ce}=await sb.from('clients').select('*').ilike('email',email).single();
+  if(ce||!client){
+    document.getElementById('loading-overlay').classList.add('hidden');
+    document.getElementById('company-name').textContent='Não cadastrado';
+    document.getElementById('overview-content').innerHTML=`<div class="error-box">
+      ⚠️ <strong>Acesso não configurado.</strong><br/>
+      Seu e-mail (<strong>${email}</strong>) não está vinculado a nenhuma empresa no sistema.<br/>
+      Entre em contato com a AG Consultoria para configurar seu acesso.
+    </div>`;
+    return;
+  }
+
+  S.client=client;
+  document.getElementById('company-name').textContent=client.name;
+
+  // Carrega todos os dados do cliente em paralelo
+  const [srv,res,ans,act,ind]=await Promise.all([
+    sb.from('surveys').select('*').eq('client_id',client.id).order('created_at',{ascending:false}),
+    sb.from('responses').select('*').eq('client_id',client.id),
+    sb.from('answers').select('*').eq('client_id',client.id),
+    sb.from('actions').select('*').eq('client_id',client.id).order('created_at',{ascending:false}),
+    sb.from('indicators').select('*').eq('client_id',client.id).order('month',{ascending:true}),
+  ]);
+
+  S.surveys   = srv.data||[];
+  S.responses = res.data||[];
+  S.answers   = ans.data||[];
+  S.actions   = act.data||[];
+  S.indicators= ind.data||[];
+
+  sb.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT')window.location.href='/';});
+
+  renderAll();
+  document.getElementById('loading-overlay').classList.add('hidden');
+})();
+</script>
+</body>
+</html>

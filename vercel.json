@@ -8,7 +8,7 @@
       ]
     },
     {
-      "source": "/(app|index|responder)",
+      "source": "/(app|client|index|responder)",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
       ]
