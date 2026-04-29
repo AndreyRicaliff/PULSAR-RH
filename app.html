@@ -2024,21 +2024,46 @@ function renderClients(){
     ${isAdmin?`<button class="btn btn-danger btn-sm" onclick="confirmAction('Zerar todos os dados?','Isso apagará TODAS as respostas, pesquisas e colaboradores de todas as empresas. Os clientes serão mantidos.','resetAllData')">⚠️ Zerar Todos os Dados</button>`:''}
   </div>
   <div class="table-wrap"><table>
-    <thead><tr><th>Empresa</th><th>CNPJ</th><th>Segmento</th><th>HC</th><th>Plano</th><th>E-mail / Senha</th><th>Status</th><th>Ações</th></tr></thead>
+    <thead><tr><th>Empresa</th><th>CNPJ</th><th>Segmento</th><th>HC</th><th>Plano</th><th>E-mail de acesso</th><th>Status</th><th>Ações</th></tr></thead>
     <tbody>${clients.map(c=>`<tr>
       <td><strong>${c.name}</strong><br/><span style="font-size:11px;color:var(--muted)">${c.contact_name||''}</span></td>
       <td style="font-size:12px;color:var(--muted)">${c.cnpj||'—'}</td>
       <td>${c.segment||'—'}</td><td>${c.headcount||0}</td>
       <td><span class="badge ${planBadge[c.plan]||'badge-gray'}">${c.plan}</span></td>
-      <td style="font-size:11px">${c.email}<br/><span style="color:var(--muted)">senha: ${c.password||'—'}</span></td>
+      <td style="font-size:11px">${c.email}</td>
       <td><span class="badge ${c.status==='ativo'?'badge-green':'badge-red'}">${c.status||'ativo'}</span></td>
       <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-sm btn-secondary" onclick="viewCompany('${c.id}')">📊 Ver</button>
+        <button class="btn btn-sm btn-primary" onclick="sendClientAccess('${c.id}')" title="Enviar link de acesso por e-mail">✉️ Enviar acesso</button>
         <button class="btn btn-sm btn-secondary" onclick="copyLink('${c.id}')">🔗</button>
         ${isAdmin?`<button class="btn btn-sm" style="background:rgba(255,92,92,.15);color:var(--danger);border:1px solid rgba(255,92,92,.2)" onclick="confirmAction('Apagar cliente &quot;${c.name}&quot;?','Isso apagará o cliente e TODOS os seus dados (pesquisas, respostas, colaboradores, planos de ação). Esta ação não pode ser desfeita.','deleteClient','${c.id}')">🗑</button>`:''}
       </td>
     </tr>`).join('')}</tbody>
   </table></div>`;
+}
+
+async function sendClientAccess(clientId){
+  const c=getClientById(clientId);
+  if(!c){notify('Cliente não encontrado.','error');return}
+  if(!c.email){notify('Este cliente não tem e-mail cadastrado.','error');return}
+
+  const sb=getSB();
+  if(!sb){
+    notify('Conecte o Supabase para enviar acessos por e-mail.','error');
+    return;
+  }
+
+  notify('Enviando link de acesso...','info');
+  const {error}=await sb.auth.signInWithOtp({
+    email: c.email,
+    options:{ emailRedirectTo: window.location.origin+'/app' }
+  });
+
+  if(error){
+    notify('Erro ao enviar: '+error.message,'error');
+  } else {
+    notify(`✅ Link de acesso enviado para ${c.email}!`,'success');
+  }
 }
 
 function copyLink(clientId){
