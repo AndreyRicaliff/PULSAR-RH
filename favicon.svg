@@ -1,0 +1,36 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3662FF"/>
+      <stop offset="100%" stop-color="#A55EFF"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.38"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#3662FF" flood-opacity="0.45"/>
+    </filter>
+    <clipPath id="clip">
+      <rect x="16" y="16" width="480" height="480" rx="112"/>
+    </clipPath>
+  </defs>
+
+  <!-- Fundo com sombra candy -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)" filter="url(#shadow)"/>
+
+  <!-- Linha interna escura (borda interna sutil) -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="none" stroke="rgba(0,0,30,0.18)" stroke-width="3"/>
+
+  <!-- Brilho glossy no topo -->
+  <rect x="16" y="16" width="480" height="270" rx="112" fill="url(#gloss)" clip-path="url(#clip)"/>
+
+  <!-- Linha EKG centralizada -->
+  <polyline
+    points="56,256 130,256 162,202 188,256 210,138 238,366 264,256 328,256 354,208 378,256 456,256"
+    fill="none" stroke="white" stroke-width="24"
+    stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+
+  <!-- Ponto de pulso (coração do sinal) -->
+  <circle cx="224" cy="256" r="10" fill="white" opacity="0.6"/>
+</svg>
