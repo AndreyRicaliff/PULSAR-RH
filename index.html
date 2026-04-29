@@ -70,9 +70,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   0%,100%{opacity:1;filter:drop-shadow(0 0 0px rgba(54,98,255,0))}
   50%    {opacity:.85;filter:drop-shadow(0 0 12px rgba(54,98,255,.35))}
 }
-.logo-area .made-by{color:var(--muted);font-size:11px;margin-top:8px;letter-spacing:.3px}
-.logo-area .made-by strong{color:var(--text);font-weight:600;letter-spacing:.5px}
-.logo-area .tagline{color:var(--muted);font-size:11px;margin-top:2px;opacity:.6}
+.logo-area p{color:var(--muted);font-size:12px;margin-top:6px}
+.made-by-footer{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;z-index:2}
+.made-by-footer span{font-size:10px;color:var(--muted);opacity:.5;letter-spacing:.8px;text-transform:uppercase}
+.made-by-footer strong{color:var(--muted);opacity:.7;font-weight:600;letter-spacing:1px}
+.made-by-footer small{display:block;font-size:9px;color:var(--muted);opacity:.35;margin-top:2px;letter-spacing:.4px}
 
 .tabs{display:flex;background:var(--surface2);border-radius:12px;padding:4px;margin-bottom:24px;gap:4px}
 .tab{flex:1;padding:10px;text-align:center;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:.2s}
@@ -106,6 +108,12 @@ input:focus{border-color:var(--primary)}
 <!-- Partículas -->
 <div class="particles" id="particles"></div>
 
+<!-- Footer made by -->
+<div class="made-by-footer">
+  <span>Feito por <strong>AG CONSULTORIA</strong></span>
+  <small>Muito além da contabilidade</small>
+</div>
+
 <div class="login-wrap">
   <div class="logo-area">
     <!-- Linha de EKG animada -->
@@ -124,8 +132,7 @@ input:focus{border-color:var(--primary)}
       </svg>
     </div>
     <h1>PULSAR RH</h1>
-    <p class="made-by">Feito por <strong>AG CONSULTORIA</strong></p>
-    <p class="tagline">Muito além da contabilidade</p>
+    <p>O pulso da sua operação</p>
   </div>
 
   <div class="tabs">

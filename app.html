@@ -36,7 +36,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .nav-item:hover{color:var(--text);background:var(--surface2)}
 .nav-item.active{color:var(--primary);background:rgba(54,98,255,.1);border-left-color:var(--primary)}
 .nav-item .icon{font-size:16px;width:20px;text-align:center}
-.sidebar-footer{padding:14px 16px;border-top:1px solid var(--border)}
+.sidebar-footer{padding:14px 16px 10px;border-top:1px solid var(--border)}
+.sidebar-madeby{margin-top:10px;padding-top:8px;border-top:1px solid var(--border);text-align:center}
+.sidebar-madeby span{font-size:9px;color:var(--muted);opacity:.5;letter-spacing:.6px;text-transform:uppercase}
+.sidebar-madeby strong{font-weight:600;opacity:.8}
+.sidebar-madeby small{display:block;font-size:8px;color:var(--muted);opacity:.35;margin-top:1px;letter-spacing:.3px}
 .user-pill{display:flex;align-items:center;gap:8px;font-size:12px}
 .avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;color:#fff}
 .user-pill .meta{flex:1;overflow:hidden}
@@ -272,8 +276,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </defs>
       <path d="M0,9 L18,9 L24,6 L28,9 L31,2 L34,16 L37,9 L48,9 L52,5 L56,9 L100,9"/>
     </svg>
-    <em class="sidebar-made">Feito por AG CONSULTORIA</em>
-    <small>Muito além da contabilidade</small>
   </div>
   <nav class="nav">
     <div class="nav-section">Visão Geral</div>
@@ -309,6 +311,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <span id="user-role">-</span>
       </div>
       <button class="logout-btn" onclick="doLogout()" title="Sair">⏻</button>
+    </div>
+    <div class="sidebar-madeby">
+      <span>Feito por <strong>AG CONSULTORIA</strong></span>
+      <small>Muito além da contabilidade</small>
     </div>
   </div>
 </aside>
