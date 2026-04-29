@@ -1194,7 +1194,7 @@ function renderSurveys(cid){
       <div class="s-card-footer">
         <div class="s-card-stat"><strong>${s.total_invited}</strong> convidados</div>
         <div class="s-card-actions">
-          <button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText(window.location.origin+'/ag_rh_v2/${link}');notify('Link copiado!','success')">🔗</button>
+          <button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText('${link}');notify('Link copiado!','success')">🔗</button>
           <button class="btn btn-sm btn-primary" onclick="openResults('${s.id}')">Ver</button>
           ${s.status==='ativa'?`<button class="btn btn-sm btn-secondary" onclick="changeSurveyStatus('${s.id}','pausada')">⏸</button>`:''}
           ${s.status==='pausada'?`<button class="btn btn-sm btn-secondary" onclick="changeSurveyStatus('${s.id}','ativa')">▶</button>`:''}
